@@ -1,0 +1,13 @@
+app = "squidbox-redis"
+primary_region = "fra"
+
+[build]
+  image = "redis:7"
+
+[mounts]
+  source = "redis_data"
+  destination = "/data"
+
+[[processes]]
+  # Enable AOF persistence so data survives hard restarts
+  command = ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]

@@ -1,0 +1,196 @@
+import Icon from '@/components/atoms/Icon';
+import { useAuthStore } from '@/hooks/useAuthStore';
+import { storeAuthTokens } from '@/services/backend';
+import { handleTwitterCallback } from '@/utils/twitter';
+import { Button, Text, useTheme } from '@rneui/themed';
+import * as AuthSession from 'expo-auth-session';
+import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
+
+// Complete the auth session for better UX
+WebBrowser.maybeCompleteAuthSession();
+
+// Twitter OAuth 2.0 configuration
+const TWITTER_CLIENT_ID = process.env.EXPO_PUBLIC_TWITTER_CLIENT_ID || '';
+const TWITTER_CALLBACK_URL =
+  process.env.EXPO_PUBLIC_TWITTER_CALLBACK_URL || 'squidboxsocial://auth';
+
+const discovery = {
+  authorizationEndpoint: 'https://twitter.com/i/oauth2/authorize',
+  tokenEndpoint: 'https://api.twitter.com/2/oauth2/token',
+  revocationEndpoint: 'https://api.twitter.com/2/oauth2/revoke',
+};
+
+export default function TwitterAuthPage() {
+  const { theme } = useTheme();
+  const { storeTokens } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: TWITTER_CLIENT_ID,
+      redirectUri:
+        TWITTER_CALLBACK_URL ||
+        AuthSession.makeRedirectUri({
+          scheme: 'squidboxsocial',
+          path: 'auth',
+        }),
+      scopes: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+      usePKCE: true,
+    },
+    discovery,
+  );
+
+  const handleAuthSuccess = useCallback(
+    async (url: string) => {
+      try {
+        setIsLoading(true);
+
+        const result = await handleTwitterCallback(url);
+
+        if (!result.success || !result.user || !result.accessToken) {
+          Alert.alert('Error', result.error || 'Failed to authenticate with Twitter.');
+          return;
+        }
+
+        // Store tokens locally
+        await storeTokens('twitter', {
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+          username: result.user.username,
+          userId: result.user.id,
+        });
+
+        // Store tokens in backend
+        await storeAuthTokens({
+          platform: 'twitter',
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          expiresIn: result.expiresIn,
+          username: result.user.username,
+          userId: result.user.id,
+        });
+
+        Alert.alert('Success', 'Successfully connected to Twitter!', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
+      } catch (error) {
+        console.error('Twitter authentication error:', error);
+        Alert.alert('Error', 'An error occurred during Twitter authentication. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [storeTokens],
+  );
+
+  // Handle the authentication response
+  useEffect(() => {
+    if (response?.type === 'success' && response.url) {
+      handleAuthSuccess(response.url);
+    } else if (response?.type === 'error') {
+      Alert.alert('Error', 'Twitter authentication failed. Please try again.');
+      setIsLoading(false);
+    } else if (response?.type === 'cancel') {
+      Alert.alert('Cancelled', 'Twitter authentication was cancelled.');
+      setIsLoading(false);
+    }
+  }, [response, handleAuthSuccess]);
+
+  const handleTwitterLogin = async () => {
+    if (!request) {
+      Alert.alert('Error', 'Authentication not initialized. Please check your configuration.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await promptAsync();
+    } catch (error) {
+      console.error('Failed to start Twitter authentication:', error);
+      Alert.alert('Error', 'Failed to start Twitter authentication. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.content}>
+        <Icon name="twitter" type="feather" size={64} color="#1DA1F2" style={styles.icon} />
+
+        <Text h3 style={[styles.title, { color: theme.colors.black }]}>
+          Connect to Twitter
+        </Text>
+
+        <Text style={[styles.description, { color: theme.colors.grey2 }]}>
+          Authorize SquidboxSocial to post on your behalf. Your credentials are stored securely and
+          only used for posting content.
+        </Text>
+
+        <Button
+          title="Connect to Twitter"
+          onPress={handleTwitterLogin}
+          loading={isLoading}
+          disabled={isLoading || !request}
+          buttonStyle={[styles.button, { backgroundColor: '#1DA1F2' }]}
+          titleStyle={styles.buttonTitle}
+        />
+
+        <Button
+          title="Cancel"
+          onPress={() => router.back()}
+          type="outline"
+          buttonStyle={styles.cancelButton}
+          titleStyle={[styles.cancelButtonTitle, { color: theme.colors.grey2 }]}
+        />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    marginBottom: 24,
+  },
+  title: {
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  description: {
+    marginBottom: 32,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  button: {
+    width: '100%',
+    marginBottom: 16,
+    borderRadius: 12,
+    paddingVertical: 16,
+  },
+  buttonTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    width: '100%',
+    borderRadius: 12,
+    paddingVertical: 16,
+    borderWidth: 1,
+  },
+  cancelButtonTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+});

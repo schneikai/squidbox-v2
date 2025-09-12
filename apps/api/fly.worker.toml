@@ -1,0 +1,11 @@
+app = "squidbox-worker"
+primary_region = "fra"
+
+[build]
+
+[mounts]
+  source = "data"
+  destination = "/data"
+
+[[processes]]
+  command = ["node", "dist/worker-main.js"]

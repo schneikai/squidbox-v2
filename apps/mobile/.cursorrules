@@ -1,0 +1,83 @@
+# SquidboxSocial - Expo React Native App
+
+## Project Overview
+
+SquidboxSocial is an Expo React Native application that automates social media posts on X (Twitter) and Bluesky. The app allows users to create posts with photos and videos, providing a streamlined interface for managing multiple social media accounts.
+
+## Tech Stack
+
+- **Framework**: Expo React Native with TypeScript
+- **Navigation**: Expo Router (file-based routing)
+- **Documentation**: https://docs.expo.dev/
+- **Node.js**: Use `nvm use` for each terminal session (specified in .nvmrc)
+- **React Native Elements**: Components Library
+
+## Key Development Rules
+
+### Code Style
+
+- Use TypeScript strict mode
+- Follow Expo Router patterns for navigation
+- Use existing themed components (`ThemedView`, `ThemedText`)
+- Prefer functional components with hooks
+
+### React Component Conventions
+
+- Write plain function components with inferred return types.
+- Do NOT use `React.FC` or explicit `JSX.Element` return annotations.
+- Example:
+
+```ts
+type Props = { title: string };
+export default function MyComponent({ title }: Props) {
+  return <ThemedText>{title}</ThemedText>;
+}
+```
+
+- Make component props readonly. Prefer `readonly` fields and `ReadonlyArray<T>` for array props.
+
+### File Structure
+
+- `app/` - Expo Router pages and layouts
+- `components/` - Reusable UI components
+- `constants/` - App constants and theme
+- `hooks/` - Custom React hooks
+
+## Typescript
+
+- do not use type `any` if possible
+
+### Atomic Design Structure
+
+- Follow Atomic Design:
+  - Atoms: smallest reusable parts (e.g., `Avatar`, `Button`, `IconButton`).
+  - Molecules: simple compositions (e.g., `TweetTextInput`, `MediaGrid`).
+  - Organisms: complex sections (e.g., `TweetComposer`).
+  - Templates: layouts without data (e.g., `ComposeTemplate`).
+  - Pages: routed screens under `app/` (e.g., `app/(tabs)/compose.tsx`).
+- Prefer composition and reuse; extract atoms when duplication appears.
+
+### Components & Styling
+
+- Use **RNE** (React Native Elements) (`@rneui/themed`, `@rneui/base`) for UI; use RN (React Native) primitives for layout.
+- Use `StyleSheet.create` only for **layout** (flex, spacing, sizing, positioning).
+- For **visuals** (colors, typography, spacing, radii, shadows), use the app **theme** via `const { theme } = useTheme()`.
+- If a token is missing, extend the theme — don’t inline literals.
+- Don’t reintroduce Expo template theming.
+- Don’t duplicate atoms for small tweaks — add props (`variant`, `colorScheme`) or extend theme.
+- Ensure interactive elements have `accessibilityLabel` and ≥ 44px touch targets.
+
+- Availabe RNE Components: AirbnbRating, Avatar, Avatar.Accessory, Badge, BottomSheet, Button, ButtonGroup, Card, Card.Divider, Card.FeaturedSubtitle, Card.FeaturedTitle, Card.Image, Card.Title, CheckBox, Chip, Dialog, Dialog.Actions, Dialog.Button, Dialog.Loading, Dialog.Title, Divider, FAB, Header, Icon, Image, Input, LinearProgress, ListItem, ListItem.Accordion, ListItem.ButtonGroup, ListItem.CheckBox, ListItem.Chevron, ListItem.Content, ListItem.Input, ListItem.Subtitle, ListItem.Swipeable, ListItem.Title, Overlay, PricingCard, Rating, SearchBar, Slider, Skeleton, SocialIcon, SpeedDial, SpeedDial.Action, Switch, Tab, Tab.Item, TabView, TabView.Item, Text, Tile, Tooltip
+
+### Naming
+
+- Do not suffix atom components with `Atom`. Use short names: `Button`, `IconButton`, `Avatar`, `TextCounter`, `MediaThumbnail`.
+
+### Security & Best Practices
+
+- Never commit API keys
+- Use environment variables for config
+- Implement proper error handling
+- Follow platform-specific guidelines (iOS/Android/Web)
+
+Reference: https://docs.expo.dev/

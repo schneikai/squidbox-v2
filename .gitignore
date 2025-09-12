@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+web-build/
+coverage/
+
+# Expo / Metro
+.expo/
+.metro-health-check*
+
+# Env files
+.env
+.env.local
+.env.production
+.env*.local
+
+# OS / Editor
+.DS_Store
+.vscode/
+*.orig.*
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Prisma generated (local)
+/apps/api/generated/prisma
+
+# Misc
+expo-env.d.ts
+app-example
+
