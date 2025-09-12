@@ -67,7 +67,7 @@ export const signOut = async (): Promise<void> => {
 /**
  * Handle OAuth callback
  */
-export const handleCallback = async (code: string): Promise<JffUser> => {
+export const handleCallback = async (): Promise<JffUser> => {
   // TODO: Implement actual JFF OAuth flow
   // For now, return a dummy user
   const dummyUser: JffUser = {

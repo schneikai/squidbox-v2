@@ -30,7 +30,7 @@ export const uploadImageToTwitter = async (imageUri: string): Promise<MediaUploa
   const base64Data = await base64Promise;
 
   // Prepare form data for OAuth 1.0a
-  const mediaData = `data:${blob.type};base64,${base64Data}`;
+  // const mediaData = `data:${blob.type};base64,${base64Data}`;
 
   const url = 'https://upload.twitter.com/1.1/media/upload.json';
   const method = 'POST';

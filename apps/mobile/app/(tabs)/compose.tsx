@@ -5,11 +5,11 @@ import React, { useCallback } from 'react';
 import { Alert } from 'react-native';
 
 export default function ComposeTab() {
-  const { submitPost, isSubmitting, error } = usePostSubmission();
+  const { submitPost, error } = usePostSubmission();
 
   const handlePost = useCallback(
     async (platformPosts: readonly PlatformPosts[]) => {
-      const result = await submitPost(platformPosts);
+      await submitPost(platformPosts);
 
       if (error) {
         Alert.alert('Error', error);

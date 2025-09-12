@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
 
 import { env } from './env';
@@ -9,6 +9,11 @@ import { prisma } from './prisma';
 export type JwtPayload = {
   userId: string;
 };
+
+// Extend Request type to include user
+export interface AuthenticatedRequest extends Request {
+  user?: { id: string; email: string };
+}
 
 export function signJwt(payload: JwtPayload) {
   return jwt.sign(payload, env.JWT_SECRET as Secret, {
@@ -61,3 +66,22 @@ export async function requireAuthorization(
     return null;
   }
 }
+
+/**
+ * Authentication middleware that adds user to request object
+ * Use this for routes that require authentication
+ */
+export const authenticateToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const user = await requireAuthorization(req, res);
+
+  console.log('user', user);
+  if (user) {
+    (req as AuthenticatedRequest).user = user;
+    next();
+  }
+  // If user is null, requireAuthorization already sent the response
+};

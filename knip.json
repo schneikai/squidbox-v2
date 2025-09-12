@@ -1,0 +1,37 @@
+{
+  "workspaces": {
+    ".": {
+      "entry": [
+        "apps/api/src/index.ts",
+        "apps/api/src/api-main.ts", 
+        "apps/api/src/worker-main.ts",
+        "apps/mobile/app/**/*.tsx",
+        "apps/mobile/app/**/*.ts",
+        "packages/contracts/src/index.ts",
+        "packages/twitter-api/src/index.ts"
+      ]
+    }
+  },
+  "ignoreBinaries": ["expo", "tsup", "tsx", "vitest"],
+  "ignore": [
+    "**/dist/**",
+    "**/build/**", 
+    "**/generated/**",
+    "**/*.d.ts",
+    "**/node_modules/**",
+    "**/migrations/**",
+    "**/scripts/**",
+    "**/tests/**",
+    "**/vitest.config.*",
+    "**/tsup.config.*",
+    "**/metro.config.*",
+    "**/expo-env.d.ts",
+    "@types/*",
+    "eslint-*",
+    "prettier",
+    "typescript",
+    "tsup",
+    "vitest",
+    "supertest"
+  ]
+}

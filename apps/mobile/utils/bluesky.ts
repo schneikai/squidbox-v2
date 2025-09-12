@@ -67,7 +67,7 @@ export const signOut = async (): Promise<void> => {
 /**
  * Handle OAuth callback
  */
-export const handleCallback = async (code: string): Promise<BlueskyUser> => {
+export const handleCallback = async (): Promise<BlueskyUser> => {
   // TODO: Implement actual Bluesky OAuth flow
   // For now, return a dummy user
   const dummyUser: BlueskyUser = {

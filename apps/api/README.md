@@ -58,7 +58,21 @@ Returns:
 - `{"ok": true, "database": "connected", "timestamp": "..."}` when healthy
 - `{"ok": false, "database": "disconnected", "error": "..."}` when database is down
 
-### Create a test user
+### Create a development user
+
+```bash
+# Create a dev user with predefined credentials
+pnpm db:create-dev-user
+```
+
+This creates a user with:
+
+- Email: `dev@example.com` (or `EXPO_PUBLIC_DEV_USER_EMAIL` if set)
+- Password: `devpassword123` (or `EXPO_PUBLIC_DEV_USER_PASSWORD` if set)
+
+The script will use the same environment variables that the mobile app uses for consistency.
+
+Or create a custom test user:
 
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \

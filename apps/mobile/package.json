@@ -9,18 +9,11 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint --fix",
-    "lint:check": "expo lint",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "prepare": "husky",
-    "types": "tsc --noEmit",
-    "knip": "knip",
-    "knip:check": "knip --no-progress",
-    "knip:fix": "knip --fix"
+    "prepare": "husky"
   },
   "dependencies": {
     "@squidbox/contracts": "workspace:*",
+    "@squidbox/twitter-api": "workspace:*",
     "@expo/vector-icons": "^14.1.0",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",

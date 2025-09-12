@@ -67,7 +67,7 @@ export const signOut = async (): Promise<void> => {
 /**
  * Handle OAuth callback
  */
-export const handleCallback = async (code: string): Promise<OnlyFansUser> => {
+export const handleCallback = async (): Promise<OnlyFansUser> => {
   // TODO: Implement actual OnlyFans OAuth flow
   // For now, return a dummy user
   const dummyUser: OnlyFansUser = {

@@ -87,7 +87,7 @@ export function computeButtonStyles({
     buttonStyle: {
       paddingHorizontal: 0,
       paddingVertical: 0,
-      opacity: 1,
+      opacity: disabled ? 0.5 : 1,
       backgroundColor,
       borderWidth,
       borderColor,

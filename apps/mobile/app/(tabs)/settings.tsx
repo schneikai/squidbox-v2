@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { healthCheck, storeAuthTokens } from '@/services/backend';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { Button, ButtonGroup, Text, useThemeMode } from '@rneui/themed';
@@ -7,10 +8,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SettingsTab() {
   const { mode, setMode } = useThemeMode();
+  const { logout } = useAuth();
   const insets = useSafeAreaInsets();
   const [pref, setPref] = React.useState<'automatic' | 'light' | 'dark'>(() => 'automatic');
   const [isTestingBackend, setIsTestingBackend] = useState(false);
   const [isTestingHealth, setIsTestingHealth] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const systemScheme = useColorScheme() ?? 'light';
 
   React.useEffect(() => {
@@ -58,6 +61,30 @@ export default function SettingsTab() {
     }
   };
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoggingOut(true);
+              await logout();
+            } catch {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <View style={{ padding: 16, gap: 16 }}>
@@ -82,6 +109,14 @@ export default function SettingsTab() {
           onPress={testBackendTokenStorage}
           disabled={isTestingBackend}
           type="outline"
+        />
+
+        <Text style={{ fontWeight: '600', marginTop: 24 }}>Account</Text>
+        <Button
+          title={isLoggingOut ? 'Logging out...' : 'Logout'}
+          onPress={handleLogout}
+          disabled={isLoggingOut}
+          buttonStyle={{ backgroundColor: '#ff4444' }}
         />
       </View>
     </View>

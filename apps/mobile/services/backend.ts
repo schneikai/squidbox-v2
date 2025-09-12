@@ -1,24 +1,12 @@
 import type { Platform } from '@/contexts/PlatformContext';
-import type { OAuthTokensCreate } from '@squidbox/contracts';
-import type { PlatformPosts } from '@/types/post';
+import type { 
+  OAuthTokensCreate, 
+  CreatePostRequest, 
+  CreatePostResponse
+} from '@squidbox/contracts';
 import Constants from 'expo-constants';
 import { httpGet, httpPost, type ApiResponse } from './http';
-
-export type CreatePostRequest = Readonly<{
-  platformPosts: readonly PlatformPosts[];
-}>;
-
-export type CreatePostResponse = Readonly<{
-  id: string;
-  status: 'success' | 'partial' | 'failed';
-  platformResults: readonly {
-    platform: Platform;
-    success: boolean;
-    postId?: string;
-    error?: string;
-  }[];
-  createdAt: string;
-}>;
+import { getStoredAuthToken } from './auth';
 
 export type AuthTokensRequest = OAuthTokensCreate;
 
@@ -38,22 +26,10 @@ const getBackendBaseUrl = (): string => {
   return url;
 };
 
-// Get JWT secret for this backend
-const getJwtSecret = (): string => {
-  // Backend requires to login and respond with a JWT token!
-  // curl -X POST http://localhost:8080/api/auth/login \
-  // -H "Content-Type: application/json" \
-  // -d '{"email": "test2@example.com", "password": "password123"}'
-  // TODO: We need to implemet login in the app!
-  // JWT_SECRET should be removed from the frontend! Only the backend needs it to create and verify tokens!
-
-  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbWZnbXZ1ZzgwMDAwdGVqbHhlbm04NzFzIiwiaWF0IjoxNzU3NjY5MjQxLCJleHAiOjE3NTgyNzQwNDF9.EL_tJM6l4UMvNZ71v5dVo54G0c3Im-Igd9c7uLHP6Cw';
-};
-
 // Get authentication headers for backend requests
-const getAuthHeaders = (): Record<string, string> => {
-  const jwtSecret = getJwtSecret();
-  return jwtSecret ? { Authorization: `Bearer ${jwtSecret}` } : {};
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const token = await getStoredAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 // Helper to construct full backend URLs
@@ -70,7 +46,8 @@ export const storeAuthTokens = async (
   tokens: AuthTokensRequest,
 ): Promise<ApiResponse<AuthTokensResponse>> => {
   const url = getBackendUrl('/api/users/tokens');
-  return httpPost<AuthTokensResponse>(url, tokens, getAuthHeaders());
+  const headers = await getAuthHeaders();
+  return httpPost<AuthTokensResponse>(url, tokens, headers);
 };
 
 /**
@@ -79,9 +56,10 @@ export const storeAuthTokens = async (
 export const getAuthTokens = async (
   platform: Platform,
 ): Promise<ApiResponse<AuthTokensRequest | null>> => {
+  const headers = await getAuthHeaders();
   return httpGet<AuthTokensRequest | null>(
     getBackendUrl(`/api/users/tokens/${platform}`),
-    getAuthHeaders(),
+    headers,
   );
 };
 
@@ -91,7 +69,8 @@ export const getAuthTokens = async (
 export const healthCheck = async (): Promise<
   ApiResponse<{ status: string; timestamp: string }>
 > => {
-  return httpGet<{ status: string; timestamp: string }>(getBackendUrl('/health'), getAuthHeaders());
+  const headers = await getAuthHeaders();
+  return httpGet<{ status: string; timestamp: string }>(getBackendUrl('/health'), headers);
 };
 
 /**
@@ -100,5 +79,6 @@ export const healthCheck = async (): Promise<
 export const createPost = async (
   postData: CreatePostRequest,
 ): Promise<ApiResponse<CreatePostResponse>> => {
-  return httpPost<CreatePostResponse>(getBackendUrl('/api/post'), postData, getAuthHeaders());
+  const headers = await getAuthHeaders();
+  return httpPost<CreatePostResponse>(getBackendUrl('/api/post'), postData, headers);
 };

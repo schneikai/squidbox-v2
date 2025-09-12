@@ -3,12 +3,14 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import Icon from '@/components/atoms/Icon';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function TabLayout() {
   const { theme } = useTheme();
 
   return (
-    <Tabs
+    <ProtectedRoute>
+      <Tabs
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: (theme.colors as any).grey3,
@@ -48,7 +50,8 @@ export default function TabLayout() {
             <Icon name="settings" type="feather" size={20} color={color as any} />
           ),
         }}
-      />
-    </Tabs>
+        />
+      </Tabs>
+    </ProtectedRoute>
   );
 }

@@ -176,7 +176,7 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
   // Get platforms by feature
   const getPlatformsByFeature = useCallback((feature: keyof PlatformConfig): Platform[] => {
     return Object.entries(PLATFORM_CONFIGS)
-      .filter(([_, config]) => {
+      .filter(([, config]) => {
         const value = config[feature];
         return typeof value === 'boolean' ? value : true;
       })
@@ -185,7 +185,7 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
 
   // Get connected platform details (full objects)
   const connectedPlatformDetails: ConnectedPlatform[] = Object.entries(platformStatuses)
-    .filter(([_, status]) => status.isConnected)
+    .filter(([, status]) => status.isConnected)
     .map(([platform, status]) => ({
       platform: platform as Platform,
       config: PLATFORM_CONFIGS[platform as Platform],

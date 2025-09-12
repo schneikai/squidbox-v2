@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsup src/index.ts --dts --format cjs,esm",
     "dev": "tsup src/index.ts --dts --format cjs,esm --watch",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "types": "tsc --noEmit"
   },
   "devDependencies": {
     "tsup": "^8.2.4",

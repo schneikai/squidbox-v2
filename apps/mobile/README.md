@@ -19,14 +19,27 @@ To use the Twitter authentication feature, you'll need to set up OAuth2 credenti
 Create a `.env` file in the root directory with the following variables:
 
 ```bash
+# Backend Configuration
+EXPO_PUBLIC_BACKEND_URL=http://localhost:3000
+
+# Development Configuration (optional)
+EXPO_PUBLIC_DEV_USER_EMAIL=dev@example.com
+EXPO_PUBLIC_DEV_USER_PASSWORD=devpassword123
+
 # Twitter OAuth 2.0 Configuration
 EXPO_PUBLIC_TWITTER_CLIENT_ID=your_twitter_client_id_here
 EXPO_PUBLIC_TWITTER_CLIENT_SECRET=your_twitter_client_secret_here
 EXPO_PUBLIC_TWITTER_CALLBACK_URL=squidboxsocial://auth
-
-# Backend Configuration (optional)
-EXPO_PUBLIC_BACKEND_URL=https://api.squidboxsocial.com
 ```
+
+#### Development Features
+
+When running in development mode (`__DEV__`), you can use these optional environment variables to prefill the login form:
+
+- `EXPO_PUBLIC_DEV_USER_EMAIL` - Email for the development user
+- `EXPO_PUBLIC_DEV_USER_PASSWORD` - Password for the development user
+
+If both variables are present, the login form will be automatically prefilled with these credentials, making development faster and easier.
 
 ### Twitter App Setup
 

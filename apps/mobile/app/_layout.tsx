@@ -12,6 +12,7 @@ import React from 'react';
 import 'react-native-reanimated';
 
 import { Colors } from '@/constants/Colors';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { PlatformProvider } from '@/contexts/PlatformContext';
 
 const rneTheme = createTheme({
@@ -58,6 +59,7 @@ function ThemedNavigation() {
   return (
     <NavThemeProvider value={navTheme}>
       <Stack>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
@@ -74,9 +76,11 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider theme={rneTheme}>
-      <PlatformProvider>
-        <ThemedNavigation />
-      </PlatformProvider>
+      <AuthProvider>
+        <PlatformProvider>
+          <ThemedNavigation />
+        </PlatformProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
