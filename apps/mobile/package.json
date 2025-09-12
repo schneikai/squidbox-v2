@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "expo start",
     "start": "expo start",
+    "types": "tsc --noEmit -p tsconfig.json",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",

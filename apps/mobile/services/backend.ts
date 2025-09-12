@@ -4,6 +4,7 @@ import type {
   CreatePostRequest, 
   CreatePostResponse
 } from '@squidbox/contracts';
+export type { CreatePostRequest, CreatePostResponse } from '@squidbox/contracts';
 import Constants from 'expo-constants';
 import { httpGet, httpPost, type ApiResponse } from './http';
 import { getStoredAuthToken } from './auth';

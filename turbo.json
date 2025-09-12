@@ -12,6 +12,9 @@
       "cache": false,
       "dependsOn": ["^build"]
     },
+    "types": {
+      "cache": false
+    },
     "test": {
       "cache": false
     },

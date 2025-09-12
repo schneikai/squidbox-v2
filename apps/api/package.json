@@ -8,6 +8,7 @@
     "dev:down": "docker compose down -v --remove-orphans",
     "build": "tsc -p tsconfig.json",
     "start": "node --enable-source-maps dist/index.js",
+    "types": "tsc --noEmit -p tsconfig.json",
     "db:migrate": "bash scripts/local-db-migrate.sh",
     "db:create-dev-user": "tsx scripts/create-dev-user.ts",
     "deploy": "bash scripts/deploy-fly.sh",

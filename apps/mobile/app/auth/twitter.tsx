@@ -59,7 +59,7 @@ export default function TwitterAuthPage() {
         await storeTokens('twitter', {
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
-          expiresIn: result.expiresIn,
+          expiresIn: result.expiresIn ?? 0,
           username: result.user.username,
           userId: result.user.id,
         });
@@ -69,7 +69,7 @@ export default function TwitterAuthPage() {
           platform: 'twitter',
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
-          expiresIn: result.expiresIn,
+          expiresIn: result.expiresIn ?? 0,
           username: result.user.username,
           userId: result.user.id,
         });

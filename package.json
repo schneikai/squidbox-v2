@@ -33,7 +33,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "types": "tsc --noEmit",
+    "types": "turbo run types",
     "knip": "knip",
     "knip:check": "knip --no-progress",
     "knip:fix": "knip --fix",

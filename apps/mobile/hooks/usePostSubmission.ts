@@ -26,8 +26,19 @@ export function usePostSubmission(): PostSubmissionState & PostSubmissionActions
       setError(null);
 
       try {
+        const platformPostsToSend: CreatePostRequest['platformPosts'] = platformPosts.flatMap(
+          (group) =>
+            group.platforms.flatMap((platform) =>
+              group.posts.map((post) => ({
+                platform,
+                text: post.text,
+                media: post.media.map((m) => ({ type: m.type, url: m.uri })),
+              })),
+            ),
+        );
+
         const requestData: CreatePostRequest = {
-          platformPosts,
+          platformPosts: platformPostsToSend,
         };
 
         const response = await createPost(requestData);
