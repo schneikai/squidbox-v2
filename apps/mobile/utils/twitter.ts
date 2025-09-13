@@ -1,7 +1,5 @@
 import * as AuthSession from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
-
-// Import API functions from packages
 import {
   createTweet as createTweetAPI,
   getTwitterUser as getTwitterUserAPI,
@@ -11,18 +9,16 @@ import {
   type CreateTweetRequest,
   type UploadMediaRequest,
 } from '@squidbox/twitter-api';
-
-// Storage keys
-const ACCESS_TOKEN_KEY = 'twitter_access_token';
-const REFRESH_TOKEN_KEY = 'twitter_refresh_token';
-const CODE_VERIFIER_KEY = 'twitter_code_verifier';
-const USER_INFO_KEY = 'twitter_user_info';
+import { getPlatformTokens, clearPlatformTokens } from '@/services/platformTokenStorage';
 
 // Twitter OAuth 2.0 configuration
 const TWITTER_CLIENT_ID = process.env.EXPO_PUBLIC_TWITTER_CLIENT_ID || '';
 const TWITTER_CLIENT_SECRET = process.env.EXPO_PUBLIC_TWITTER_CLIENT_SECRET || '';
 const TWITTER_CALLBACK_URL =
   process.env.EXPO_PUBLIC_TWITTER_CALLBACK_URL || 'squidboxsocial://auth';
+
+// Storage keys
+const CODE_VERIFIER_KEY = 'twitter_code_verifier';
 
 /**
  * Initialize Twitter OAuth 2.0 authentication
@@ -160,9 +156,6 @@ export const handleTwitterCallback = async (url: string): Promise<TwitterAuthRes
     // Get user info
     const user = await getTwitterUserAPI(tokenResult.accessToken);
 
-    // Cache user info
-    await SecureStore.setItemAsync(USER_INFO_KEY, JSON.stringify(user));
-
     return {
       success: true,
       user,
@@ -197,17 +190,9 @@ export const handleCallback = async (
   // Exchange code for tokens
   const tokenResult = await exchangeCodeForTokens(code, codeVerifier);
 
-  // Store tokens
-  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, tokenResult.accessToken);
-  if (tokenResult.refreshToken) {
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokenResult.refreshToken);
-  }
-
+  // Tokens are now stored in unified storage via the platform auth system
   // Get user info
   const user = await getTwitterUserAPI(tokenResult.accessToken);
-
-  // Cache user info
-  await SecureStore.setItemAsync(USER_INFO_KEY, JSON.stringify(user));
 
   return {
     id: user.id,
@@ -217,12 +202,12 @@ export const handleCallback = async (
 };
 
 /**
- * Check if user is connected (uses cache to avoid API calls)
+ * Check if user is connected (uses platform auth storage)
  */
 export const isConnected = async (): Promise<boolean> => {
   try {
-    const cachedUser = await getCachedUser();
-    return !!cachedUser;
+    const tokens = await getPlatformTokens('twitter');
+    return !!tokens?.accessToken;
   } catch (error) {
     console.error('Error checking sign-in status:', error);
     return false;
@@ -246,8 +231,7 @@ export const getUser = async (): Promise<TwitterUser | null> => {
 
     console.log('Twitter user:', user);
 
-    // Cache the user info
-    await SecureStore.setItemAsync(USER_INFO_KEY, JSON.stringify(user));
+    // User info is now stored in unified storage via the platform auth system
 
     return user;
   } catch (error) {
@@ -261,8 +245,17 @@ export const getUser = async (): Promise<TwitterUser | null> => {
  */
 export const getCachedUser = async (): Promise<TwitterUser | null> => {
   try {
-    const userInfo = await SecureStore.getItemAsync(USER_INFO_KEY);
-    return userInfo ? JSON.parse(userInfo) : null;
+    // Get from platform auth storage
+    const tokens = await getPlatformTokens('twitter');
+    if (tokens?.username && tokens?.userId) {
+      return {
+        id: tokens.userId,
+        username: tokens.username,
+        name: tokens.username, // Use username as display name if no separate name stored
+      };
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error getting cached user:', error);
     return null;
@@ -289,20 +282,22 @@ export const refreshAuthStatus = async (): Promise<TwitterUser | null> => {
 };
 
 /**
- * Sign out (clear all stored data)
+ * Sign out (clear all stored data from platform auth storage)
  */
 export const signOut = async (): Promise<void> => {
-  await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(USER_INFO_KEY);
+  // Clear platform auth storage
+  await clearPlatformTokens('twitter');
+  
+  // Clear code verifier (still needed for OAuth flow)
   await SecureStore.deleteItemAsync(CODE_VERIFIER_KEY);
 };
 
 /**
- * Get stored access token
+ * Get stored access token (from platform auth storage)
  */
 export const getAccessToken = async (): Promise<string | null> => {
-  return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+  const tokens = await getPlatformTokens('twitter');
+  return tokens?.accessToken || null;
 };
 
 /**

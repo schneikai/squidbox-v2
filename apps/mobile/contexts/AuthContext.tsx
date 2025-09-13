@@ -1,4 +1,4 @@
-import { login as authLogin, register as authRegister, logout, isAuthenticated as checkAuthStatus } from '@/services/auth';
+import { login as authLogin, register as authRegister, logout, hasLocalAuthToken, verifyAuthentication } from '@/services/auth';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 interface AuthContextType {
@@ -17,10 +17,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuthStatusAsync = useCallback(async () => {
     try {
-      const authenticated = await checkAuthStatus();
-      setIsAuthenticated(authenticated);
+      console.log('AuthProvider.checkAuthStatusAsync: verifying authentication...');
+      const result = await verifyAuthentication();
+      console.log('AuthProvider.checkAuthStatusAsync: authentication result:', result);
+      setIsAuthenticated(result.success);
+
     } catch (error) {
-      console.error('Error checking auth status:', error);
+      console.error('AuthProvider.checkAuthStatusAsync: error checking auth status:', error);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);

@@ -18,6 +18,13 @@ export type ApiError = Readonly<{
   statusText?: string;
 }>;
 
+export const isApiError = (error: unknown): error is ApiError => {
+  return error !== null && 
+         typeof error === 'object' && 
+         'message' in error && 
+         'status' in error;
+};
+
 // Configuration
 const getDefaultHeaders = (): Record<string, string> => ({
   'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import Icon from '@/components/atoms/Icon';
-import { useAuthStore } from '@/hooks/useAuthStore';
-import { storeAuthTokens } from '@/services/backend';
+import { storePlatformTokens } from '@/services/platformTokenStorage';
+import { useAuthVerification } from '@/hooks/useAuthVerification';
+import { storePlatformAuthTokens } from '@/services/backend';
 import { handleTwitterCallback, initializeTwitterAuthApp } from '@/utils/twitter';
 import { Button, Text, useTheme } from '@rneui/themed';
 import * as AuthSession from 'expo-auth-session';
@@ -25,7 +26,7 @@ const discovery = {
 
 export default function TwitterAuthPage() {
   const { theme } = useTheme();
-  const { storeTokens } = useAuthStore();
+  const { ensureAuth } = useAuthVerification();
   const [isLoading, setIsLoading] = useState(false);
   const [request, setRequest] = useState<AuthSession.AuthRequest | null>(null);
 
@@ -56,8 +57,9 @@ export default function TwitterAuthPage() {
           return;
         }
 
-        // Store tokens locally
-        await storeTokens('twitter', {
+        // Store tokens in backend
+        await storePlatformAuthTokens({
+          platform: 'twitter',
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
           expiresIn: result.expiresIn ?? 0,
@@ -65,9 +67,8 @@ export default function TwitterAuthPage() {
           userId: result.user.id,
         });
 
-        // Store tokens in backend
-        await storeAuthTokens({
-          platform: 'twitter',
+        // Store tokens locally
+        await storePlatformTokens('twitter', {
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
           expiresIn: result.expiresIn ?? 0,
@@ -85,7 +86,7 @@ export default function TwitterAuthPage() {
         setIsLoading(false);
       }
     },
-    [storeTokens],
+    [],
   );
 
 
@@ -94,6 +95,9 @@ export default function TwitterAuthPage() {
       Alert.alert('Error', 'Authentication not initialized. Please check your configuration.');
       return;
     }
+
+    // Verify user is authenticated before starting OAuth flow
+    if (!(await ensureAuth())) return;
 
     setIsLoading(true);
     try {

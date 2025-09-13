@@ -15,7 +15,7 @@ type PlatformConfig = Readonly<{
   authUrl?: string;
 }>;
 
-const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
+export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
   twitter: {
     id: 'twitter',
     name: 'Twitter',

@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { healthCheck, storeAuthTokens } from '@/services/backend';
+import { healthCheck, storePlatformAuthTokens } from '@/services/backend';
 import { getErrorMessage } from '@/utils/errorUtils';
 import { Button, ButtonGroup, Text, useThemeMode } from '@rneui/themed';
 import React, { useState } from 'react';
@@ -27,7 +27,7 @@ export default function SettingsTab() {
     try {
       setIsTestingBackend(true);
 
-      await storeAuthTokens({
+      await storePlatformAuthTokens({
         platform: 'twitter',
         accessToken: 'test_access_token_123',
         refreshToken: 'test_refresh_token_456',

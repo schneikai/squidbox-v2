@@ -24,5 +24,8 @@ PGPASSWORD="$POSTGRES_PASSWORD" psql "host=localhost port=5433 user=$POSTGRES_US
 PGPASSWORD="$POSTGRES_PASSWORD" psql "host=localhost port=5433 user=$POSTGRES_USER dbname=postgres" -v ON_ERROR_STOP=1 -c \
 "CREATE DATABASE ${SHADOW_DB_NAME};"
 
+# If you want to start fresh, you can run:
+# npx prisma migrate reset
+
 # Run prisma (uses host URLs from .env)
 npx prisma migrate dev --name "$NAME"

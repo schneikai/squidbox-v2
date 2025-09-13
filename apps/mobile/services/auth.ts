@@ -1,24 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
-import { httpPost } from './http';
-import Constants from 'expo-constants';
-
-// Get backend base URL
-const getBackendBaseUrl = (): string => {
-  const url = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || '';
-  if (!url) {
-    throw new Error(
-      'Backend URL not configured. Please set EXPO_PUBLIC_BACKEND_URL in your .env file or backendUrl in app.json extra config.',
-    );
-  }
-  return url;
-};
-
-// Helper to construct full backend URLs
-const getBackendUrl = (endpoint: string): string => {
-  const baseUrl = getBackendBaseUrl();
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  return `${baseUrl}${cleanEndpoint}`;
-};
+import { getCurrentUser, loginUser, registerUser } from './backend';
+import { isApiError } from './http';
 
 const JWT_TOKEN_KEY = 'jwt_token';
 
@@ -48,13 +30,18 @@ type RegisterResponse = {
   };
 };
 
+type AuthVerificationResult = {
+  success: boolean;
+  message: string;
+  reason?: 'no_token' | 'unauthorized' | 'network_error' | 'success';
+};
+
 /**
  * Login user and store JWT token
  */
 export const login = async (credentials: LoginRequest): Promise<{ success: boolean; data?: LoginResponse; error?: string }> => {
   try {
-    const url = getBackendUrl('/api/auth/login');
-    const response = await httpPost<LoginResponse>(url, credentials);
+    const response = await loginUser(credentials);
     
     // Store JWT token if login successful
     if (response.data?.token) {
@@ -63,12 +50,9 @@ export const login = async (credentials: LoginRequest): Promise<{ success: boole
     
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Login error:', error);
     return { 
       success: false, 
-      error: error && typeof error === 'object' && 'message' in error 
-        ? (error as { message: string }).message 
-        : 'Login failed' 
+      error: isApiError(error) ? error.message : 'Login failed' 
     };
   }
 };
@@ -78,17 +62,13 @@ export const login = async (credentials: LoginRequest): Promise<{ success: boole
  */
 export const register = async (userData: RegisterRequest): Promise<{ success: boolean; data?: RegisterResponse; error?: string }> => {
   try {
-    const url = getBackendUrl('/api/auth/register');
-    const response = await httpPost<RegisterResponse>(url, userData);
+    const response = await registerUser(userData);
     
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('Register error:', error);
     return { 
       success: false, 
-      error: error && typeof error === 'object' && 'message' in error 
-        ? (error as { message: string }).message 
-        : 'Registration failed' 
+      error: isApiError(error) ? error.message : 'Registration failed' 
     };
   }
 };
@@ -97,29 +77,71 @@ export const register = async (userData: RegisterRequest): Promise<{ success: bo
  * Get stored JWT token
  */
 export const getStoredAuthToken = async (): Promise<string | null> => {
-  try {
-    return await SecureStore.getItemAsync(JWT_TOKEN_KEY);
-  } catch (error) {
-    console.error('Failed to retrieve auth token:', error);
-    return null;
-  }
+  return await SecureStore.getItemAsync(JWT_TOKEN_KEY);
 };
 
 /**
  * Clear stored JWT token (logout)
  */
 export const logout = async (): Promise<void> => {
-  try {
-    await SecureStore.deleteItemAsync(JWT_TOKEN_KEY);
-  } catch (error) {
-    console.error('Failed to clear auth token:', error);
-  }
+  // TODO: Maybe call clearAllPlatformTokens here too?
+  await SecureStore.deleteItemAsync(JWT_TOKEN_KEY);
 };
 
 /**
- * Check if user is authenticated
+ * Check if user has local auth token stored (offline check)
  */
-export const isAuthenticated = async (): Promise<boolean> => {
-  const token = await getStoredAuthToken();
-  return token !== null;
+export const hasLocalAuthToken = async (): Promise<boolean> => {
+  return !!(await getStoredAuthToken());
+};
+
+/**
+ * Verify authentication by checking local token and then checking server by calling /users/me
+ * This method intentionally only clears local tokens on 401 response
+ * to prevent accidental clearing of tokens when offline
+ * 
+ * @param allowOffline - Whether to return success if tokens exist but the device is offline (default: true)
+ */
+export const verifyAuthentication = async (allowOffline: boolean = true): Promise<AuthVerificationResult> => {
+  console.log('Auth.verifyAuthentication: getting stored auth token...');
+  let token = await getStoredAuthToken();
+  console.log('Auth.verifyAuthentication: found token:', !!token);
+
+  if(!token) {
+    return {
+      success: false,
+      message: 'No authentication token found',
+      reason: 'no_token'
+    };
+  }
+
+  try {
+    console.log('Auth.verifyAuthentication: checking if user is authenticated...');
+    const response = await getCurrentUser();
+    console.log('Auth.verifyAuthentication: response status:', response.status);
+  } catch (error) {
+    console.log('Auth.verifyAuthentication: error:', error);
+    
+    if (isApiError(error) && error.status === 401) {
+      console.log('Auth.verifyAuthentication: unauthorized, clearing local tokens');
+      await logout();
+      return {
+        success: false,
+        message: 'Authentication token is invalid or expired',
+        reason: 'unauthorized'
+      };
+    }
+    
+    return {
+      success: allowOffline,
+      message: allowOffline ? 'Network error occurred, but offline mode is allowed' : 'Network error occurred',
+      reason: 'network_error'
+    };
+  }
+
+  return {
+    success: true,
+    message: 'Authentication verified successfully',
+    reason: 'success'
+  };
 };

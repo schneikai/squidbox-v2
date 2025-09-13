@@ -15,8 +15,35 @@ type AuthTokensResponse = Readonly<{
   message?: string;
 }>;
 
+// Auth types for HTTP calls only
+type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+type LoginResponse = {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+  };
+};
+
+type RegisterRequest = {
+  email: string;
+  password: string;
+};
+
+type RegisterResponse = {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+  };
+};
+
 // Get backend base URL
-const getBackendBaseUrl = (): string => {
+export const getBackendBaseUrl = (): string => {
   const url = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || '';
   if (!url) {
     throw new Error(
@@ -33,16 +60,16 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
 };
 
 // Helper to construct full backend URLs
-const getBackendUrl = (endpoint: string): string => {
+export const getBackendUrl = (endpoint: string): string => {
   const baseUrl = getBackendBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${baseUrl}${cleanEndpoint}`;
 };
 
 /**
- * Store OAuth tokens for a platform
+ * Store platform OAuth tokens for a platform (Twitter, Bluesky, etc.)
  */
-export const storeAuthTokens = async (
+export const storePlatformAuthTokens = async (
   tokens: AuthTokensRequest,
 ): Promise<ApiResponse<AuthTokensResponse>> => {
   const url = getBackendUrl('/api/users/tokens');
@@ -51,9 +78,9 @@ export const storeAuthTokens = async (
 };
 
 /**
- * Get stored OAuth tokens for a platform
+ * Get stored platform OAuth tokens for a platform (Twitter, Bluesky, etc.)
  */
-const getAuthTokens = async (
+const getPlatformAuthTokens = async (
   platform: Platform,
 ): Promise<ApiResponse<AuthTokensRequest | null>> => {
   const headers = await getAuthHeaders();
@@ -74,6 +101,28 @@ export const healthCheck = async (): Promise<
 };
 
 /**
+ * Get current user information
+ */
+export const getCurrentUser = async (): Promise<ApiResponse<{ user: { id: string; email: string } }>> => {
+  const headers = await getAuthHeaders();
+  return httpGet<{ user: { id: string; email: string } }>(getBackendUrl('/api/users/me'), headers);
+};
+
+/**
+ * Login user (HTTP call only)
+ */
+export const loginUser = async (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
+  return httpPost<LoginResponse>(getBackendUrl('/api/auth/login'), credentials);
+};
+
+/**
+ * Register new user (HTTP call only)
+ */
+export const registerUser = async (userData: RegisterRequest): Promise<ApiResponse<RegisterResponse>> => {
+  return httpPost<RegisterResponse>(getBackendUrl('/api/auth/register'), userData);
+};
+
+/**
  * Create a new post and send it to the specified platforms
  */
 export const createPost = async (
@@ -82,3 +131,5 @@ export const createPost = async (
   const headers = await getAuthHeaders();
   return httpPost<CreatePostResponse>(getBackendUrl('/api/post'), postData, headers);
 };
+
+
