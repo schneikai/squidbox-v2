@@ -24,73 +24,76 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
     }
 
     const { platformPosts } = validationResult.data;
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
-    }
 
     const postId = `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const platformResults: PostResult[] = [];
     let successCount = 0;
+    let totalPosts = 0;
 
-    // Process each platform post
-    for (const platformPost of platformPosts) {
-      try {
-        let result: PostResult;
+    // Process each platform group
+    for (const platformGroup of platformPosts) {
+      // For each platform in the group
+      for (const platform of platformGroup.platforms) {
+        // For each post in the group
+        for (const post of platformGroup.posts) {
+          totalPosts++;
+          try {
+            let result: PostResult;
 
-        switch (platformPost.platform) {
-          case 'twitter':
-            result = await handleTwitterPost(userId, platformPost);
-            break;
-          case 'bluesky':
-            // TODO: Implement Bluesky posting
-            result = {
-              platform: 'bluesky',
+            switch (platform) {
+              case 'twitter':
+                result = await handleTwitterPost(req.user!.id, { platform, text: post.text, media: post.media });
+                break;
+              case 'bluesky':
+                // TODO: Implement Bluesky posting
+                result = {
+                  platform: 'bluesky',
+                  success: false,
+                  error: 'Bluesky posting not yet implemented',
+                };
+                break;
+              case 'onlyfans':
+                // TODO: Implement OnlyFans posting
+                result = {
+                  platform: 'onlyfans',
+                  success: false,
+                  error: 'OnlyFans posting not yet implemented',
+                };
+                break;
+              case 'jff':
+                // TODO: Implement JFF posting
+                result = {
+                  platform: 'jff',
+                  success: false,
+                  error: 'JFF posting not yet implemented',
+                };
+                break;
+              default:
+                result = {
+                  platform: platform,
+                  success: false,
+                  error: `Unsupported platform: ${platform}`,
+                };
+            }
+
+            platformResults.push(result);
+            if (result.success) {
+              successCount++;
+            }
+          } catch (error) {
+            logger.error({ err: error }, 'Error processing platform post');
+            platformResults.push({
+              platform: platform,
               success: false,
-              error: 'Bluesky posting not yet implemented',
-            };
-            break;
-          case 'onlyfans':
-            // TODO: Implement OnlyFans posting
-            result = {
-              platform: 'onlyfans',
-              success: false,
-              error: 'OnlyFans posting not yet implemented',
-            };
-            break;
-          case 'jff':
-            // TODO: Implement JFF posting
-            result = {
-              platform: 'jff',
-              success: false,
-              error: 'JFF posting not yet implemented',
-            };
-            break;
-          default:
-            result = {
-              platform: platformPost.platform,
-              success: false,
-              error: `Unsupported platform: ${platformPost.platform}`,
-            };
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
         }
-
-        platformResults.push(result);
-        if (result.success) {
-          successCount++;
-        }
-      } catch (error) {
-        logger.error({ err: error }, 'Error processing platform post');
-        platformResults.push({
-          platform: platformPost.platform,
-          success: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
       }
     }
 
     // Determine overall status
-    const status = successCount === platformPosts.length ? 'success' : 
+    const status = successCount === totalPosts ? 'success' : 
                    successCount > 0 ? 'partial' : 'failed';
 
     const response: CreatePostResponse = {
@@ -105,7 +108,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
       await prisma.post.create({
         data: {
           id: postId,
-          userId,
+          userId: req.user!.id,
           content: JSON.stringify(platformPosts),
           status,
           platformResults: JSON.stringify(platformResults),

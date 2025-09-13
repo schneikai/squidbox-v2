@@ -1,8 +1,9 @@
 import { PlatformService } from '@/utils/platformService';
+import type { Platform } from '@squidbox/contracts';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
-// Platform types
-export type Platform = 'twitter' | 'bluesky' | 'onlyfans' | 'jff';
+// Re-export Platform type from contracts
+export type { Platform } from '@squidbox/contracts';
 
 export type PlatformConfig = Readonly<{
   id: Platform;

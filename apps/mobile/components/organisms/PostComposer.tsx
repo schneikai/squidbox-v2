@@ -3,8 +3,7 @@ import IconButton from '@/components/atoms/IconButton';
 import MediaGrid from '@/components/molecules/MediaGrid';
 import PostComposeToolbar from '@/components/molecules/PostComposeToolbar';
 import PostTextInput from '@/components/molecules/PostTextInput';
-import type { MediaItem } from '@/types/media';
-import type { Post, PostList } from '@/types/post';
+import type { MediaItem, Post, PostList } from '@squidbox/contracts';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -93,6 +92,8 @@ function PostComposer({
           id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
           uri: asset.uri,
           type: kind,
+          url: asset.uri, // For contract compatibility
+          alt: undefined, // Can be set later if needed
         } as MediaItem;
       })
       .filter((x): x is MediaItem => Boolean(x));

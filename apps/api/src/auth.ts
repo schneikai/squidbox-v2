@@ -78,7 +78,6 @@ export const authenticateToken = async (
 ) => {
   const user = await requireAuthorization(req, res);
 
-  console.log('user', user);
   if (user) {
     (req as AuthenticatedRequest).user = user;
     next();

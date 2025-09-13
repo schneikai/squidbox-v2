@@ -1,5 +1,5 @@
 import MediaThumbnail from '@/components/atoms/MediaThumbnail';
-import type { MediaItem } from '@/types/media';
+import type { MediaItem } from '@squidbox/contracts';
 import React from 'react';
 import { ScrollView } from 'react-native';
 

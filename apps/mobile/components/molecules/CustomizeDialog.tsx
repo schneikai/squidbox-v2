@@ -1,5 +1,5 @@
 import Button from '@/components/atoms/Button';
-import type { Platform } from '@/contexts/PlatformContext';
+import type { Platform } from '@squidbox/contracts';
 import { usePlatformContext } from '@/contexts/PlatformContext';
 import { CheckBox, Dialog, Text, useTheme } from '@rneui/themed';
 import React, { useEffect, useState } from 'react';

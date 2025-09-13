@@ -1,6 +1,6 @@
 import ComposeTemplate from '@/components/templates/ComposeTemplate';
 import { usePostSubmission } from '@/hooks/usePostSubmission';
-import type { PlatformPosts } from '@/types/post';
+import type { PlatformPosts } from '@squidbox/contracts';
 import React, { useCallback } from 'react';
 import { Alert } from 'react-native';
 

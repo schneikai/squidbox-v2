@@ -1,6 +1,6 @@
 import Button from '@/components/atoms/Button';
 import { PlatformComposer } from '@/components/organisms/PlatformComposer';
-import type { PlatformComposerData, PlatformPosts } from '@/types/post';
+import type { PlatformComposerData, PlatformPosts } from '@squidbox/contracts';
 import { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

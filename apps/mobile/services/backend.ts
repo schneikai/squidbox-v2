@@ -1,4 +1,4 @@
-import type { Platform } from '@/contexts/PlatformContext';
+import type { Platform } from '@squidbox/contracts';
 import type { 
   OAuthTokensCreate, 
   CreatePostRequest, 

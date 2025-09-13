@@ -1,5 +1,6 @@
 import Icon from '@/components/atoms/Icon';
-import { usePlatformContext, usePlatformStatuses, type Platform } from '@/contexts/PlatformContext';
+import { usePlatformContext, usePlatformStatuses } from '@/contexts/PlatformContext';
+import type { Platform } from '@squidbox/contracts';
 import { PlatformService } from '@/utils/platformService';
 import { Card, ListItem, Text, useTheme } from '@rneui/themed';
 import { router, useFocusEffect } from 'expo-router';

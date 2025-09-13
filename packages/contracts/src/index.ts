@@ -18,19 +18,34 @@ export const MediaItem = z.object({
   type: z.enum(["image", "video"]),
   url: z.url(),
   alt: z.string().optional(),
+  id: z.string(), // Local identifier for React keys (frontend only)
+  uri: z.string(), // Local file URI (frontend only)
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 
-export const PlatformPost = z.object({
-  platform: Platform,
-  text: z.string().min(1).max(280), // Twitter's character limit
-  media: z.array(MediaItem).optional(),
-  replyToId: z.string().optional(),
+// Post types
+export const Post = z.object({
+  text: z.string(),
+  media: z.array(MediaItem),
 });
-export type PlatformPost = z.infer<typeof PlatformPost>;
+export type Post = z.infer<typeof Post>;
+
+export const PostList = z.array(Post);
+export type PostList = z.infer<typeof PostList>;
+
+export const PlatformPosts = z.object({
+  platforms: z.array(Platform),
+  posts: PostList,
+});
+export type PlatformPosts = z.infer<typeof PlatformPosts>;
+
+export const PlatformComposerData = z.object({
+  platformPosts: z.array(PlatformPosts),
+});
+export type PlatformComposerData = z.infer<typeof PlatformComposerData>;
 
 export const CreatePostRequest = z.object({
-  platformPosts: z.array(PlatformPost).min(1),
+  platformPosts: z.array(PlatformPosts).min(1),
 });
 export type CreatePostRequest = z.infer<typeof CreatePostRequest>;
 

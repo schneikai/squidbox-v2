@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { useCallback } from 'react';
 
-import { type Platform } from '@/contexts/PlatformContext';
+import { type Platform } from '@squidbox/contracts';
 
 // Import platform configs to get the list of all platforms
 const PLATFORM_CONFIGS = {

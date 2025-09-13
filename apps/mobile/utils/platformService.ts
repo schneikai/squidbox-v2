@@ -1,4 +1,4 @@
-import { type Platform } from '@/contexts/PlatformContext';
+import { type Platform } from '@squidbox/contracts';
 import * as bluesky from './bluesky';
 import * as jff from './jff';
 import * as onlyfans from './onlyfans';

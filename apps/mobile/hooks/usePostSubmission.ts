@@ -1,6 +1,6 @@
 import { createPost, type CreatePostRequest, type CreatePostResponse } from '@/services/backend';
 import type { ApiError } from '@/services/http';
-import type { PlatformPosts } from '@/types/post';
+import type { PlatformPosts } from '@squidbox/contracts';
 import { useCallback, useState } from 'react';
 
 type PostSubmissionState = Readonly<{
@@ -26,19 +26,8 @@ export function usePostSubmission(): PostSubmissionState & PostSubmissionActions
       setError(null);
 
       try {
-        const platformPostsToSend: CreatePostRequest['platformPosts'] = platformPosts.flatMap(
-          (group) =>
-            group.platforms.flatMap((platform) =>
-              group.posts.map((post) => ({
-                platform,
-                text: post.text,
-                media: post.media.map((m) => ({ type: m.type, url: m.uri })),
-              })),
-            ),
-        );
-
         const requestData: CreatePostRequest = {
-          platformPosts: platformPostsToSend,
+          platformPosts: platformPosts as CreatePostRequest['platformPosts'], // Cast to mutable type
         };
 
         const response = await createPost(requestData);
