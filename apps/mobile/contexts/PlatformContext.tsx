@@ -1,9 +1,7 @@
 import { PlatformService } from '@/utils/platformService';
 import type { Platform } from '@squidbox/contracts';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 
-// Re-export Platform type from contracts
-export type { Platform } from '@squidbox/contracts';
 
 export type PlatformConfig = Readonly<{
   id: Platform;
@@ -17,43 +15,6 @@ export type PlatformConfig = Readonly<{
   authUrl?: string;
 }>;
 
-export type PlatformStatus = Readonly<{
-  isConnected: boolean;
-  username?: string;
-  userId?: string;
-}>;
-
-export type ConnectedPlatform = Readonly<{
-  platform: Platform;
-  config: PlatformConfig;
-  status: PlatformStatus;
-}>;
-
-type PlatformContextType = Readonly<{
-  // Platform arrays (same structure - full PlatformConfig objects)
-  supportedPlatforms: PlatformConfig[];
-  connectedPlatforms: PlatformConfig[];
-
-  // Platform configurations and statuses
-  platformConfigs: Record<Platform, PlatformConfig>;
-  platformStatuses: Record<Platform, PlatformStatus>;
-  connectedPlatformDetails: ConnectedPlatform[];
-
-  // Loading states
-  isLoading: boolean;
-
-  // Actions
-  refreshPlatformStatuses: () => Promise<void>;
-  getPlatformConfig: (platform: Platform) => PlatformConfig;
-  getPlatformStatus: (platform: Platform) => PlatformStatus;
-  isPlatformConnected: (platform: Platform) => boolean;
-  getPlatformsByFeature: (feature: keyof PlatformConfig) => Platform[];
-  getConnectedPlatformsByFeature: (feature: keyof PlatformConfig) => ConnectedPlatform[];
-}>;
-
-const PlatformContext = createContext<PlatformContextType | null>(null);
-
-// Platform configurations
 const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
   twitter: {
     id: 'twitter',
@@ -98,200 +59,60 @@ const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
   },
 } as const;
 
+const SUPPORTED_PLATFORMS = Object.values(PLATFORM_CONFIGS) as Readonly<PlatformConfig[]>;
+
+type PlatformContextType = Readonly<{
+  supportedPlatforms: typeof SUPPORTED_PLATFORMS;
+  connectedPlatforms: Readonly<PlatformConfig[]>;
+
+  // Platform configurations
+  platformConfigs: Record<Platform, PlatformConfig>;
+}>;
+
+const PlatformContext = createContext<PlatformContextType | null>(null);
+
 type PlatformProviderProps = Readonly<{
   children: React.ReactNode;
 }>;
 
-// Create supported platforms array outside component to ensure stable reference
-const SUPPORTED_PLATFORMS = Object.values(PLATFORM_CONFIGS);
-
 export function PlatformProvider({ children }: PlatformProviderProps) {
-  const [platformStatuses, setPlatformStatuses] = useState<Record<Platform, PlatformStatus>>({
-    twitter: { isConnected: false },
-    bluesky: { isConnected: false },
-    onlyfans: { isConnected: false },
-    jff: { isConnected: false },
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const hasInitialized = useRef(false);
+  const [connectedPlatforms, setConnectedPlatforms] = useState<
+    typeof SUPPORTED_PLATFORMS
+  >([]);
 
-  // Get platform status using unified service (fast, cached check)
-  const getPlatformStatusAsync = useCallback(
-    async (platform: Platform): Promise<PlatformStatus> => {
-      try {
-        const isConnected = await PlatformService.isConnected(platform);
-        if (isConnected) {
-          const userInfo = await PlatformService.getCachedUser(platform);
-          return {
-            isConnected: true,
-            username: userInfo?.username,
-            userId: userInfo?.id,
-          };
-        }
-        return { isConnected: false };
-      } catch (error) {
-        console.log(`${platform} not connected:`, error);
-        return { isConnected: false };
-      }
-    },
-    [],
-  );
-
-  // Get platform status with API validation (slower, more accurate)
-  const getPlatformStatusWithValidation = useCallback(
-    async (platform: Platform): Promise<PlatformStatus> => {
-      try {
-        // First try to refresh auth status with API call
-        const userInfo = await PlatformService.refreshAuthStatus(platform);
-        if (userInfo) {
-          return {
-            isConnected: true,
-            username: userInfo.username,
-            userId: userInfo.id,
-          };
-        }
-        
-        // If refresh fails, fall back to cached check
-        const isConnected = await PlatformService.isConnected(platform);
-        if (isConnected) {
-          const cachedUserInfo = await PlatformService.getCachedUser(platform);
-          return {
-            isConnected: true,
-            username: cachedUserInfo?.username,
-            userId: cachedUserInfo?.id,
-          };
-        }
-        
-        return { isConnected: false };
-      } catch (error) {
-        console.log(`Error validating ${platform} connection:`, error);
-        // Fall back to cached check on error
-        return await getPlatformStatusAsync(platform);
-      }
-    },
-    [getPlatformStatusAsync],
-  );
-
-  // Get status of a specific platform (synchronous - returns current state)
-  const getPlatformStatus = useCallback(
-    (platform: Platform): PlatformStatus => {
-      return platformStatuses[platform] || { isConnected: false };
-    },
-    [platformStatuses],
-  );
-
-  // Refresh all platform statuses with API validation
-  const refreshPlatformStatuses = useCallback(async () => {
-    setIsLoading(true);
-    const newStatuses: Record<Platform, PlatformStatus> = {
-      twitter: { isConnected: false },
-      bluesky: { isConnected: false },
-      onlyfans: { isConnected: false },
-      jff: { isConnected: false },
-    };
-
-    // Use validation method for more accurate status checking
-    for (const platform of SUPPORTED_PLATFORMS) {
-      newStatuses[platform.id] = await getPlatformStatusWithValidation(platform.id);
-    }
-
-    setPlatformStatuses(newStatuses);
-    setIsLoading(false);
-  }, [getPlatformStatusWithValidation]);
-
-  // Get platform configuration
-  const getPlatformConfig = useCallback((platform: Platform): PlatformConfig => {
-    return PLATFORM_CONFIGS[platform];
-  }, []);
-
-  // Check if platform is connected
-  const isPlatformConnected = useCallback(
-    (platform: Platform): boolean => {
-      return platformStatuses[platform]?.isConnected || false;
-    },
-    [platformStatuses],
-  );
-
-  // Get platforms by feature
-  const getPlatformsByFeature = useCallback((feature: keyof PlatformConfig): Platform[] => {
-    return Object.entries(PLATFORM_CONFIGS)
-      .filter(([, config]) => {
-        const value = config[feature];
-        return typeof value === 'boolean' ? value : true;
-      })
-      .map(([platform]) => platform as Platform);
-  }, []);
-
-  // Get connected platform details (full objects)
-  const connectedPlatformDetails: ConnectedPlatform[] = Object.entries(platformStatuses)
-    .filter(([, status]) => status.isConnected)
-    .map(([platform, status]) => ({
-      platform: platform as Platform,
-      config: PLATFORM_CONFIGS[platform as Platform],
-      status,
-    }));
-
-  // Get connected platforms (full PlatformConfig objects)
-  const connectedPlatforms: PlatformConfig[] = connectedPlatformDetails.map(({ config }) => config);
-
-  // Get connected platforms by feature
-  const getConnectedPlatformsByFeature = useCallback(
-    (feature: keyof PlatformConfig): ConnectedPlatform[] => {
-      return connectedPlatformDetails.filter(({ config }) => {
-        const value = config[feature];
-        return typeof value === 'boolean' ? value : true;
-      });
-    },
-    [connectedPlatformDetails],
-  );
-
-  // Initial load - only run once
   useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      const loadInitialStatuses = async () => {
-        setIsLoading(true);
-        const newStatuses: Record<Platform, PlatformStatus> = {
-          twitter: { isConnected: false },
-          bluesky: { isConnected: false },
-          onlyfans: { isConnected: false },
-          jff: { isConnected: false },
-        };
+    let cancelled = false;
 
-        for (const platform of SUPPORTED_PLATFORMS) {
-          newStatuses[platform.id] = await getPlatformStatusAsync(platform.id);
-        }
+    (async () => {
+      const results = await Promise.all(
+        SUPPORTED_PLATFORMS.map(async (platform) =>
+          (await PlatformService.isConnected(platform.id)) ? platform : null
+        )
+      );
+      if (!cancelled) {
+        setConnectedPlatforms(results.filter(Boolean) as typeof SUPPORTED_PLATFORMS);
+      }
+    })();
 
-        setPlatformStatuses(newStatuses);
-        setIsLoading(false);
-      };
-      loadInitialStatuses();
-    }
-  }, [getPlatformStatusAsync]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-  const contextValue: PlatformContextType = {
-    // Platform arrays (same structure)
-    supportedPlatforms: SUPPORTED_PLATFORMS,
-    connectedPlatforms,
+  const contextValue = useMemo(
+    () => ({
+      supportedPlatforms: SUPPORTED_PLATFORMS,
+      connectedPlatforms,
+      platformConfigs: PLATFORM_CONFIGS,
+    }),
+    [connectedPlatforms]
+  );
 
-    // Platform configurations and statuses
-    platformConfigs: PLATFORM_CONFIGS,
-    platformStatuses,
-    connectedPlatformDetails,
-
-    // Loading states
-    isLoading,
-
-    // Actions
-    refreshPlatformStatuses,
-    getPlatformConfig,
-    getPlatformStatus,
-    isPlatformConnected,
-    getPlatformsByFeature,
-    getConnectedPlatformsByFeature,
-  };
-
-  return <PlatformContext.Provider value={contextValue}>{children}</PlatformContext.Provider>;
+  return (
+    <PlatformContext.Provider value={contextValue}>
+      {children}
+    </PlatformContext.Provider>
+  );
 }
 
 /**
@@ -305,19 +126,3 @@ export function usePlatformContext(): PlatformContextType {
   return context;
 }
 
-/**
- * Hook for getting platform statuses (shorthand)
- */
-export function usePlatformStatuses() {
-  const { platformStatuses, isLoading, refreshPlatformStatuses } = usePlatformContext();
-  return { platformStatuses, isLoading, refreshPlatformStatuses };
-}
-
-/**
- * Hook for getting connected platforms (shorthand)
- */
-export function useConnectedPlatforms() {
-  const { connectedPlatformDetails, connectedPlatforms, isLoading, refreshPlatformStatuses } =
-    usePlatformContext();
-  return { connectedPlatformDetails, connectedPlatforms, isLoading, refreshPlatformStatuses };
-}

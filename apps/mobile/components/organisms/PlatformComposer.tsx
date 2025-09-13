@@ -32,7 +32,7 @@ export function PlatformComposer({
   const { connectedPlatforms } = usePlatformContext();
 
   // Extract platform names from connected platform configs
-  const connectedPlatformNames = connectedPlatforms.map((config) => config.id);
+  const connectedPlatformNames = useMemo(() => connectedPlatforms.map((config) => config.id), [connectedPlatforms]);
 
   // Helper function to get platform name by ID (from connected platforms only)
   const getPlatformName = (platformId: Platform) =>
@@ -46,7 +46,7 @@ export function PlatformComposer({
 
   // Generates a unique id for new groups (monotonic within this component instance)
   const createUniqueGroupId = () => `group-${groupIdCounterRef.current++}`;
-
+  
   // Post groups state - each group has platforms and a composer
   const [postGroups, setPostGroups] = useState<PostGroup[]>(() => {
     if (initialData?.platformPosts.length) {
@@ -85,12 +85,8 @@ export function PlatformComposer({
         },
       ]);
     }
-  }, [connectedPlatformNames, initialData?.platformPosts.length, postGroups]);
+  }, [connectedPlatformNames, initialData?.platformPosts.length]);
 
-  // Get all available platforms for main selector (only connected platforms)
-  const allAvailablePlatforms = connectedPlatformNames;
-
-  // Get all unique selected platforms from all groups
   const selectedPlatforms = useMemo(
     () => postGroups.flatMap((group) => group.platforms),
     [postGroups],
@@ -332,7 +328,7 @@ export function PlatformComposer({
 
       <PlatformSelectorDialog
         isVisible={showPlatformSelector}
-        availablePlatforms={allAvailablePlatforms}
+        availablePlatforms={connectedPlatformNames}
         selectedPlatforms={selectedPlatforms}
         onClose={handlePlatformSelectorClose}
       />
