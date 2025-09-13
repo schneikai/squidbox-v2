@@ -27,6 +27,20 @@ describe('POST /api/post', () => {
       });
 
     authToken = userResponse.body.token;
+    
+    // Create Twitter OAuth tokens for the test user
+    const { prisma } = await import('../src/prisma.js');
+    await prisma.oAuthToken.create({
+      data: {
+        userId: userResponse.body.user.id,
+        platform: 'twitter',
+        accessToken: 'test_access_token',
+        refreshToken: 'test_refresh_token',
+        expiresIn: 3600,
+        username: 'testuser',
+        platformUserId: '123456789',
+      },
+    });
   });
 
   afterEach(() => {

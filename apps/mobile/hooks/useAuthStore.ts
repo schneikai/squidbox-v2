@@ -11,7 +11,7 @@ const PLATFORM_CONFIGS = {
   jff: { id: 'jff' as Platform },
 } as const;
 
-export type AuthTokens = Readonly<{
+type AuthTokens = Readonly<{
   accessToken: string;
   refreshToken?: string;
   expiresIn?: number;

@@ -25,7 +25,7 @@ export type MediaItem = z.infer<typeof MediaItem>;
 
 // Post types
 export const Post = z.object({
-  text: z.string(),
+  text: z.string().min(1, "Text cannot be empty"),
   media: z.array(MediaItem),
 });
 export type Post = z.infer<typeof Post>;

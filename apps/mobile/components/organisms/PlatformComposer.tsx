@@ -3,9 +3,8 @@ import CustomizeDialog from '@/components/molecules/CustomizeDialog';
 import PlatformSelectorDialog from '@/components/molecules/PlatformSelectorDialog';
 import SplitButton, { SplitButtonAction } from '@/components/molecules/SplitButton';
 import PostComposer from '@/components/organisms/PostComposer';
-import type { Platform } from '@squidbox/contracts';
+import type { Platform , PlatformComposerData, PlatformPosts, PostList } from '@squidbox/contracts';
 import { usePlatformContext } from '@/contexts/PlatformContext';
-import type { PlatformComposerData, PlatformPosts, PostList } from '@squidbox/contracts';
 import { TabView } from '@rneui/themed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -13,7 +12,7 @@ import { ScrollView, View } from 'react-native';
 // Platform selection type - only used in this component
 type PlatformSelection = Readonly<Record<Platform, boolean>>;
 
-export type PostGroup = Readonly<{
+type PostGroup = Readonly<{
   id: string;
 }> &
   PlatformPosts;

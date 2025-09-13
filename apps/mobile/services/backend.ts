@@ -1,5 +1,4 @@
-import type { Platform } from '@squidbox/contracts';
-import type { 
+import type { Platform , 
   OAuthTokensCreate, 
   CreatePostRequest, 
   CreatePostResponse
@@ -9,9 +8,9 @@ import Constants from 'expo-constants';
 import { httpGet, httpPost, type ApiResponse } from './http';
 import { getStoredAuthToken } from './auth';
 
-export type AuthTokensRequest = OAuthTokensCreate;
+type AuthTokensRequest = OAuthTokensCreate;
 
-export type AuthTokensResponse = Readonly<{
+type AuthTokensResponse = Readonly<{
   success: boolean;
   message?: string;
 }>;
@@ -54,7 +53,7 @@ export const storeAuthTokens = async (
 /**
  * Get stored OAuth tokens for a platform
  */
-export const getAuthTokens = async (
+const getAuthTokens = async (
   platform: Platform,
 ): Promise<ApiResponse<AuthTokensRequest | null>> => {
   const headers = await getAuthHeaders();

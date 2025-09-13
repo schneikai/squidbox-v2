@@ -3,7 +3,7 @@ import type { Platform } from '@squidbox/contracts';
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 
 
-export type PlatformConfig = Readonly<{
+type PlatformConfig = Readonly<{
   id: Platform;
   name: string;
   icon: string;

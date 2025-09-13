@@ -6,7 +6,7 @@ import { env } from './env';
 import { logger } from './logger';
 import { prisma } from './prisma';
 
-export type JwtPayload = {
+type JwtPayload = {
   userId: string;
 };
 
@@ -21,7 +21,7 @@ export function signJwt(payload: JwtPayload) {
   });
 }
 
-export function verifyJwt(token: string) {
+function verifyJwt(token: string) {
   return jwt.verify(token, env.JWT_SECRET as Secret) as JwtPayload;
 }
 
@@ -34,7 +34,7 @@ export async function comparePassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
-export async function requireAuthorization(
+async function requireAuthorization(
   req: Request,
   res: Response,
 ): Promise<{ id: string; email: string } | null> {

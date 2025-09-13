@@ -2,7 +2,7 @@
   "name": "squidboxservice",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
     "dev": "docker compose up -d db redis || true && tsx watch src/index.ts",
     "dev:down": "docker compose down -v --remove-orphans",
@@ -49,7 +49,6 @@
     "eslint": "^9.12.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
-    "globals": "^15.11.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
     "pino-pretty": "^11.2.2",

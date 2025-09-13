@@ -3,7 +3,7 @@ module.exports = {
   env: { es2021: true, node: true, jest: false },
   parser: '@typescript-eslint/parser',
   parserOptions: { ecmaVersion: 'latest', sourceType: 'module', project: null },
-  plugins: ['@typescript-eslint', 'import', 'unused-imports'],
+  plugins: ['@typescript-eslint', 'import'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -12,7 +12,6 @@ module.exports = {
     'prettier',
   ],
   rules: {
-    'unused-imports/no-unused-imports': 'warn',
     'import/order': [
       'warn',
       {

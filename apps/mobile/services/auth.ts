@@ -22,12 +22,12 @@ const getBackendUrl = (endpoint: string): string => {
 
 const JWT_TOKEN_KEY = 'jwt_token';
 
-export type LoginRequest = {
+type LoginRequest = {
   email: string;
   password: string;
 };
 
-export type LoginResponse = {
+type LoginResponse = {
   token: string;
   user: {
     id: string;
@@ -35,12 +35,12 @@ export type LoginResponse = {
   };
 };
 
-export type RegisterRequest = {
+type RegisterRequest = {
   email: string;
   password: string;
 };
 
-export type RegisterResponse = {
+type RegisterResponse = {
   token: string;
   user: {
     id: string;

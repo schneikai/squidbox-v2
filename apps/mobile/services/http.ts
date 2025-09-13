@@ -105,7 +105,7 @@ export const httpPost = async <T = unknown>(
   });
 };
 
-export const httpPut = async <T = unknown>(
+const httpPut = async <T = unknown>(
   url: string,
   data?: unknown,
   headers?: Record<string, string>,
@@ -117,7 +117,7 @@ export const httpPut = async <T = unknown>(
   });
 };
 
-export const httpDelete = async <T = unknown>(
+const httpDelete = async <T = unknown>(
   url: string,
   headers?: Record<string, string>,
 ): Promise<ApiResponse<T>> => {
@@ -127,7 +127,7 @@ export const httpDelete = async <T = unknown>(
   });
 };
 
-export const httpPatch = async <T = unknown>(
+const httpPatch = async <T = unknown>(
   url: string,
   data?: unknown,
   headers?: Record<string, string>,

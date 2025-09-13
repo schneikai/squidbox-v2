@@ -3,7 +3,7 @@ import express from 'express';
 import { env } from './env';
 import { logger } from './logger';
 
-export function createWorkerServer() {
+function createWorkerServer() {
   const app = express();
   app.use(express.json());
 

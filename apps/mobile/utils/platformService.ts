@@ -4,7 +4,7 @@ import * as jff from './jff';
 import * as onlyfans from './onlyfans';
 import * as twitter from './twitter';
 
-export type PlatformUser = Readonly<{
+type PlatformUser = Readonly<{
   id: string;
   username: string;
   displayName?: string;

@@ -1,18 +1,20 @@
 {
   "workspaces": {
-    ".": {
+    "apps/api": {
       "entry": [
-        "apps/api/src/index.ts",
-        "apps/api/src/api-main.ts", 
-        "apps/api/src/worker-main.ts",
-        "apps/mobile/app/**/*.tsx",
-        "apps/mobile/app/**/*.ts",
-        "packages/contracts/src/index.ts",
-        "packages/twitter-api/src/index.ts"
+        "src/api-main.ts", 
+        "src/worker-main.ts"
       ]
-    }
+    },
+    "apps/mobile": {
+      "entry": [
+        "app/**/*.tsx"
+      ]
+    },
+    "packages/contracts": {},
+    "packages/twitter-api": {}
   },
-  "ignoreBinaries": ["expo", "tsup", "tsx", "vitest"],
+  "ignoreBinaries": [],
   "ignore": [
     "**/dist/**",
     "**/build/**", 

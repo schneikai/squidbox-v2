@@ -25,7 +25,7 @@ type ComputeStylesOutput = Readonly<{
   iconContainerStyle: ButtonProps['iconContainerStyle'];
 }>;
 
-export function resolveBaseAndOnColors(
+function resolveBaseAndOnColors(
   themeColors: Colors,
   color: ButtonProps['color'] = 'primary',
 ): Readonly<{ base: ColorValue; on: ColorValue }> {

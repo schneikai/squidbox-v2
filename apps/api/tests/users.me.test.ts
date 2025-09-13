@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '@prisma/client';
 import { createApi } from '../src/api';
 import { signJwt } from '../src/auth';
 
