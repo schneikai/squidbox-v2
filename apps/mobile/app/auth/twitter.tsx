@@ -1,7 +1,7 @@
 import Icon from '@/components/atoms/Icon';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { storeAuthTokens } from '@/services/backend';
-import { handleTwitterCallback } from '@/utils/twitter';
+import { handleTwitterCallback, initializeTwitterAuthApp } from '@/utils/twitter';
 import { Button, Text, useTheme } from '@rneui/themed';
 import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
@@ -27,21 +27,22 @@ export default function TwitterAuthPage() {
   const { theme } = useTheme();
   const { storeTokens } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [request, setRequest] = useState<AuthSession.AuthRequest | null>(null);
 
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: TWITTER_CLIENT_ID,
-      redirectUri:
-        TWITTER_CALLBACK_URL ||
-        AuthSession.makeRedirectUri({
-          scheme: 'squidboxsocial',
-          path: 'auth',
-        }),
-      scopes: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
-      usePKCE: true,
-    },
-    discovery,
-  );
+  // Initialize the auth request when component mounts
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const authRequest = await initializeTwitterAuthApp();
+        setRequest(authRequest);
+      } catch (error) {
+        console.error('Failed to initialize Twitter auth:', error);
+        Alert.alert('Error', 'Failed to initialize Twitter authentication. Please check your configuration.');
+      }
+    };
+
+    initAuth();
+  }, []);
 
   const handleAuthSuccess = useCallback(
     async (url: string) => {
@@ -87,18 +88,6 @@ export default function TwitterAuthPage() {
     [storeTokens],
   );
 
-  // Handle the authentication response
-  useEffect(() => {
-    if (response?.type === 'success' && response.url) {
-      handleAuthSuccess(response.url);
-    } else if (response?.type === 'error') {
-      Alert.alert('Error', 'Twitter authentication failed. Please try again.');
-      setIsLoading(false);
-    } else if (response?.type === 'cancel') {
-      Alert.alert('Cancelled', 'Twitter authentication was cancelled.');
-      setIsLoading(false);
-    }
-  }, [response, handleAuthSuccess]);
 
   const handleTwitterLogin = async () => {
     if (!request) {
@@ -108,7 +97,17 @@ export default function TwitterAuthPage() {
 
     setIsLoading(true);
     try {
-      await promptAsync();
+      const result = await request.promptAsync(discovery);
+
+      if (result.type === 'success' && result.url) {
+        handleAuthSuccess(result.url);
+      } else if (result.type === 'error') {
+        Alert.alert('Error', 'Twitter authentication failed. Please try again.');
+        setIsLoading(false);
+      } else if (result.type === 'cancel') {
+        Alert.alert('Cancelled', 'Twitter authentication was cancelled.');
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error('Failed to start Twitter authentication:', error);
       Alert.alert('Error', 'Failed to start Twitter authentication. Please try again.');

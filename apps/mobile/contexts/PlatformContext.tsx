@@ -1,6 +1,6 @@
 import { PlatformService } from '@/utils/platformService';
 import type { Platform } from '@squidbox/contracts';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 // Re-export Platform type from contracts
 export type { Platform } from '@squidbox/contracts';
@@ -14,6 +14,7 @@ export type PlatformConfig = Readonly<{
   maxMedia: number;
   supportsVideo: boolean;
   supportsMultiplePosts: boolean;
+  authUrl?: string;
 }>;
 
 export type PlatformStatus = Readonly<{
@@ -63,6 +64,7 @@ const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
     maxMedia: 4,
     supportsVideo: true,
     supportsMultiplePosts: true,
+    authUrl: '/auth/twitter',
   },
   bluesky: {
     id: 'bluesky',
@@ -113,7 +115,7 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const hasInitialized = useRef(false);
 
-  // Get platform status using unified service
+  // Get platform status using unified service (fast, cached check)
   const getPlatformStatusAsync = useCallback(
     async (platform: Platform): Promise<PlatformStatus> => {
       try {
@@ -135,6 +137,41 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
     [],
   );
 
+  // Get platform status with API validation (slower, more accurate)
+  const getPlatformStatusWithValidation = useCallback(
+    async (platform: Platform): Promise<PlatformStatus> => {
+      try {
+        // First try to refresh auth status with API call
+        const userInfo = await PlatformService.refreshAuthStatus(platform);
+        if (userInfo) {
+          return {
+            isConnected: true,
+            username: userInfo.username,
+            userId: userInfo.id,
+          };
+        }
+        
+        // If refresh fails, fall back to cached check
+        const isConnected = await PlatformService.isConnected(platform);
+        if (isConnected) {
+          const cachedUserInfo = await PlatformService.getCachedUser(platform);
+          return {
+            isConnected: true,
+            username: cachedUserInfo?.username,
+            userId: cachedUserInfo?.id,
+          };
+        }
+        
+        return { isConnected: false };
+      } catch (error) {
+        console.log(`Error validating ${platform} connection:`, error);
+        // Fall back to cached check on error
+        return await getPlatformStatusAsync(platform);
+      }
+    },
+    [getPlatformStatusAsync],
+  );
+
   // Get status of a specific platform (synchronous - returns current state)
   const getPlatformStatus = useCallback(
     (platform: Platform): PlatformStatus => {
@@ -143,7 +180,7 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
     [platformStatuses],
   );
 
-  // Refresh all platform statuses
+  // Refresh all platform statuses with API validation
   const refreshPlatformStatuses = useCallback(async () => {
     setIsLoading(true);
     const newStatuses: Record<Platform, PlatformStatus> = {
@@ -153,13 +190,14 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
       jff: { isConnected: false },
     };
 
+    // Use validation method for more accurate status checking
     for (const platform of SUPPORTED_PLATFORMS) {
-      newStatuses[platform.id] = await getPlatformStatusAsync(platform.id);
+      newStatuses[platform.id] = await getPlatformStatusWithValidation(platform.id);
     }
 
     setPlatformStatuses(newStatuses);
     setIsLoading(false);
-  }, [getPlatformStatusAsync]);
+  }, [getPlatformStatusWithValidation]);
 
   // Get platform configuration
   const getPlatformConfig = useCallback((platform: Platform): PlatformConfig => {

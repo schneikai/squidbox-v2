@@ -93,4 +93,29 @@ export class PlatformService {
       throw error;
     }
   }
+
+  /**
+   * Refresh authentication status by making an API call to validate tokens
+   */
+  static async refreshAuthStatus(platform: Platform): Promise<PlatformUser | null> {
+    const provider = platformProviders[platform];
+    if (!provider) {
+      console.warn(`No provider found for platform: ${platform}`);
+      return null;
+    }
+
+    try {
+      // Check if the provider has a refreshAuthStatus function
+      if ('refreshAuthStatus' in provider && typeof provider.refreshAuthStatus === 'function') {
+        return await provider.refreshAuthStatus();
+      } else {
+        // Fallback to checking cached user if no refresh function available
+        console.log(`No refreshAuthStatus function for ${platform}, using cached user`);
+        return await this.getCachedUser(platform);
+      }
+    } catch (error) {
+      console.error(`Error refreshing auth status for ${platform}:`, error);
+      return null;
+    }
+  }
 }

@@ -89,3 +89,18 @@ export const handleCallback = async (): Promise<OnlyFansUser> => {
 
   return dummyUser;
 };
+
+/**
+ * Refresh authentication status by making an API call
+ * TODO: Implement actual API validation when OnlyFans OAuth is ready
+ */
+export const refreshAuthStatus = async (): Promise<OnlyFansUser | null> => {
+  try {
+    // For now, just return cached user since we don't have real API integration
+    // In the future, this should make an API call to validate the token
+    return await getCachedUser();
+  } catch (error) {
+    console.error('Error refreshing OnlyFans auth status:', error);
+    return null;
+  }
+};
