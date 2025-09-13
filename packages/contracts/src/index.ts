@@ -16,7 +16,7 @@ export type OAuthTokensCreate = z.infer<typeof OAuthTokensCreate>;
 // Post-related schemas
 export const MediaItem = z.object({
   type: z.enum(["image", "video"]),
-  url: z.string().url(),
+  url: z.url(),
   alt: z.string().optional(),
 });
 export type MediaItem = z.infer<typeof MediaItem>;
