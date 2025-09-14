@@ -1,4 +1,4 @@
-import { PlatformService } from '@/utils/platformService';
+import { isConnected } from '@/utils/platformService';
 import type { Platform } from '@squidbox/contracts';
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
 
@@ -86,7 +86,7 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
     (async () => {
       const results = await Promise.all(
         SUPPORTED_PLATFORMS.map(async (platform) =>
-          (await PlatformService.isConnected(platform.id)) ? platform : null
+          (await isConnected(platform.id)) ? platform : null
         )
       );
       if (!cancelled) {

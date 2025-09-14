@@ -94,13 +94,12 @@ export const handleCallback = async (): Promise<JffUser> => {
  * Refresh authentication status by making an API call
  * TODO: Implement actual API validation when JFF OAuth is ready
  */
-export const refreshAuthStatus = async (): Promise<JffUser | null> => {
+export const refreshAuthStatus = async (): Promise<void> => {
   try {
-    // For now, just return cached user since we don't have real API integration
+    // For now, just validate cached user since we don't have real API integration
     // In the future, this should make an API call to validate the token
-    return await getCachedUser();
+    await getCachedUser();
   } catch (error) {
     console.error('Error refreshing JFF auth status:', error);
-    return null;
   }
 };

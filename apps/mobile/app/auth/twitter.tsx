@@ -1,8 +1,7 @@
 import Icon from '@/components/atoms/Icon';
-import { storePlatformTokens } from '@/services/platformTokenStorage';
 import { useAuthVerification } from '@/hooks/useAuthVerification';
-import { storePlatformAuthTokens } from '@/services/backend';
-import { handleTwitterCallback, initializeTwitterAuthApp } from '@/utils/twitter';
+import { initializeAuth } from '@/utils/twitter';
+import { handleCallback } from '@/utils/platformService';
 import { Button, Text, useTheme } from '@rneui/themed';
 import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
@@ -34,7 +33,7 @@ export default function TwitterAuthPage() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const authRequest = await initializeTwitterAuthApp();
+        const authRequest = await initializeAuth();
         setRequest(authRequest);
       } catch (error) {
         console.error('Failed to initialize Twitter auth:', error);
@@ -50,31 +49,18 @@ export default function TwitterAuthPage() {
       try {
         setIsLoading(true);
 
-        const result = await handleTwitterCallback(url);
+        // Extract authorization code from the callback URL
+        const queryString = url.split('?')[1] || '';
+        const urlParams = new URLSearchParams(queryString);
+        const code = urlParams.get('code');
 
-        if (!result.success || !result.user || !result.accessToken) {
-          Alert.alert('Error', result.error || 'Failed to authenticate with Twitter.');
+        if (!code) {
+          Alert.alert('Error', 'No authorization code received from Twitter.');
           return;
         }
 
-        // Store tokens in backend
-        await storePlatformAuthTokens({
-          platform: 'twitter',
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          expiresIn: result.expiresIn ?? 0,
-          username: result.user.username,
-          userId: result.user.id,
-        });
-
-        // Store tokens locally
-        await storePlatformTokens('twitter', {
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          expiresIn: result.expiresIn ?? 0,
-          username: result.user.username,
-          userId: result.user.id,
-        });
+        // Use unified platform interface to complete auth and persist tokens
+        await handleCallback('twitter', code);
 
         Alert.alert('Success', 'Successfully connected to Twitter!', [
           { text: 'OK', onPress: () => router.back() },

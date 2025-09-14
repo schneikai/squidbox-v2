@@ -5,9 +5,7 @@ import { prisma } from '../prisma.js';
 import { logger } from '../logger.js';
 import { authenticateToken, AuthenticatedRequest } from '../auth.js';
 
-
 const router = Router();
-
 
 /**
  * Create a new post and send it to the specified platforms

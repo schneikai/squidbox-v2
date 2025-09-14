@@ -1,6 +1,6 @@
 import { usePlatformContext } from '@/contexts/PlatformContext';
 import type { Platform } from '@squidbox/contracts';
-import { PlatformService } from '@/utils/platformService';
+import { getCachedUser, refreshAuthStatus, isConnected, signOut } from '@/utils/platformService';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
@@ -29,7 +29,7 @@ export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformC
   // Get current status for display
   const getCurrentStatus = useCallback(async () => {
     try {
-      const userInfo = await PlatformService.getCachedUser(platform);
+      const userInfo = await getCachedUser(platform);
       if (userInfo) {
         return {
           isConnected: true,
@@ -48,7 +48,7 @@ export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformC
     if (isRefreshing) {
       setIsRefreshingInternal(true);
       
-      PlatformService.refreshAuthStatus(platform).finally(() => {
+      refreshAuthStatus(platform).finally(() => {
         setIsRefreshingInternal(false);
       });
     }
@@ -58,9 +58,9 @@ export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformC
 
   const handlePlatformPress = useCallback(async () => {
     // Get current status to determine action
-    const isConnected = await PlatformService.isConnected(platform);
+    const isConnectedStatus = await isConnected(platform);
     
-    if (isConnected) {
+    if (isConnectedStatus) {
       // Show disconnect option
       Alert.alert(
         'Disconnect Account',
@@ -71,7 +71,7 @@ export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformC
             text: 'Disconnect',
             style: 'destructive',
             onPress: async () => {
-              await PlatformService.signOut(platform);
+              await signOut(platform);
               // Trigger a refresh after sign out
               getCurrentStatus().then(setStatus);
             },
