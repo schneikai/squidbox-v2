@@ -13,9 +13,9 @@ import { Alert, StyleSheet, View } from 'react-native';
 WebBrowser.maybeCompleteAuthSession();
 
 // Twitter OAuth 2.0 configuration
-const TWITTER_CLIENT_ID = process.env.EXPO_PUBLIC_TWITTER_CLIENT_ID || '';
-const TWITTER_CALLBACK_URL =
-  process.env.EXPO_PUBLIC_TWITTER_CALLBACK_URL || 'squidboxsocial://auth';
+// const TWITTER_CLIENT_ID = process.env.EXPO_PUBLIC_TWITTER_CLIENT_ID || '';
+// const TWITTER_CALLBACK_URL =
+//   process.env.EXPO_PUBLIC_TWITTER_CALLBACK_URL || 'squidboxsocial://auth';
 
 const discovery = {
   authorizationEndpoint: 'https://twitter.com/i/oauth2/authorize',

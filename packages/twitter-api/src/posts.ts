@@ -42,17 +42,23 @@ export const createTweet = async (
 
     // Handle specific error types
     if (response.status === 429) {
-      const error = new Error('Too many requests. Please try again later.');
-      (error as any).errorType = 'rate_limit';
-      throw error;
+      return {
+        success: false,
+        error: 'Too many requests. Please try again later.',
+        errorType: 'rate_limit' as const,
+      };
     } else if (response.status === 401) {
-      const error = new Error('Authentication failed. Please sign in again.');
-      (error as any).errorType = 'unauthorized';
-      throw error;
+      return {
+        success: false,
+        error: 'Authentication failed. Please sign in again.',
+        errorType: 'unauthorized' as const,
+      };
     } else {
-      const error = new Error(`Twitter API error: ${response.status} - ${errorText}`);
-      (error as any).errorType = 'other';
-      throw error;
+      return {
+        success: false,
+        error: `Twitter API error: ${response.status} - ${errorText}`,
+        errorType: 'other' as const,
+      };
     }
   }
 
@@ -81,17 +87,23 @@ export const deleteTweet = async (
     console.error('Twitter API error response:', errorText);
 
     if (response.status === 429) {
-      const error = new Error('Too many requests. Please try again later.');
-      (error as any).errorType = 'rate_limit';
-      throw error;
+      return {
+        success: false,
+        error: 'Too many requests. Please try again later.',
+        errorType: 'rate_limit' as const,
+      };
     } else if (response.status === 401) {
-      const error = new Error('Authentication failed. Please sign in again.');
-      (error as any).errorType = 'unauthorized';
-      throw error;
+      return {
+        success: false,
+        error: 'Authentication failed. Please sign in again.',
+        errorType: 'unauthorized' as const,
+      };
     } else {
-      const error = new Error(`Twitter API error: ${response.status} - ${errorText}`);
-      (error as any).errorType = 'other';
-      throw error;
+      return {
+        success: false,
+        error: `Twitter API error: ${response.status} - ${errorText}`,
+        errorType: 'other' as const,
+      };
     }
   }
 

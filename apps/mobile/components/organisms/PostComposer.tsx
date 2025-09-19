@@ -3,15 +3,26 @@ import IconButton from '@/components/atoms/IconButton';
 import MediaGrid from '@/components/molecules/MediaGrid';
 import PostComposeToolbar from '@/components/molecules/PostComposeToolbar';
 import PostTextInput from '@/components/molecules/PostTextInput';
-import type { MediaItem, Post, PostList } from '@squidbox/contracts';
+import type { Media } from '@squidbox/contracts';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 
+type MediaWithId = Readonly<{
+  id: string; // Local identifier for React keys (frontend only)
+  uri: string; // Local file URI (frontend only)
+}> &
+  Media;
+
+type PostWithId = Readonly<{
+  text: string;
+  media: MediaWithId[];
+}>;
+
 type PostComposerProps = Readonly<{
   userAvatarUri?: string;
-  initialPosts?: PostList;
-  onPostChange?: (posts: PostList) => void;
+  initialPosts?: PostWithId[];
+  onPostChange?: (posts: PostWithId[]) => void;
   characterLimit?: number;
   maxMedia?: number;
   supportsMultiplePosts?: boolean;
@@ -25,9 +36,16 @@ function PostComposer({
   maxMedia = 4,
   supportsMultiplePosts = true,
 }: PostComposerProps) {
-  const [posts, setPosts] = useState<Post[]>(() =>
+  const [posts, setPosts] = useState<PostWithId[]>(() =>
     initialPosts && initialPosts.length > 0
-      ? initialPosts.map((p) => ({ text: p.text, media: Array.from(p.media) }))
+      ? initialPosts.map((p) => ({ 
+          text: p.text, 
+          media: p.media.map(mediaItem => ({
+            ...mediaItem,
+            id: mediaItem.id || `media-${Date.now()}-${Math.random()}`,
+            uri: mediaItem.uri || mediaItem.url,
+          }))
+        }))
       : [{ text: '', media: [] }],
   );
 
@@ -82,7 +100,7 @@ function PostComposer({
 
     if (result.canceled) return;
 
-    const newItems: MediaItem[] = result.assets
+    const newItems: MediaWithId[] = result.assets
       .map((asset) => {
         const kind: 'image' | 'video' = asset.type?.startsWith('video') ? 'video' : 'image';
         if (kind === 'video' && (existing.length > 0 || result.assets.length > 1)) {
@@ -93,10 +111,10 @@ function PostComposer({
           uri: asset.uri,
           type: kind,
           url: asset.uri, // For contract compatibility
-          alt: undefined, // Can be set later if needed
-        } as MediaItem;
+          localPath: undefined, // Can be set later if needed
+        } as MediaWithId;
       })
-      .filter((x): x is MediaItem => Boolean(x));
+      .filter((x): x is MediaWithId => Boolean(x));
 
     setPosts((prev) =>
       prev.map((p, i) =>

@@ -1,4 +1,4 @@
-import type { Platform , 
+import type { 
   OAuthTokensCreate, 
   CreatePostRequest, 
   CreatePostResponse
@@ -72,23 +72,27 @@ export const getBackendUrl = (endpoint: string): string => {
 export const storePlatformAuthTokens = async (
   tokens: AuthTokensRequest,
 ): Promise<ApiResponse<AuthTokensResponse>> => {
+  console.log('storePlatformAuthTokens: Storing tokens for platform:', tokens.platform);
   const url = getBackendUrl('/api/users/tokens');
   const headers = await getAuthHeaders();
+  console.log('storePlatformAuthTokens: Making request to:', url);
+  console.log('storePlatformAuthTokens: Headers:', headers);
+  console.log('storePlatformAuthTokens: Tokens data:', tokens);
   return httpPost<AuthTokensResponse>(url, tokens, headers);
 };
 
 /**
  * Get stored platform OAuth tokens for a platform (Twitter, Bluesky, etc.)
  */
-const getPlatformAuthTokens = async (
-  platform: Platform,
-): Promise<ApiResponse<AuthTokensRequest | null>> => {
-  const headers = await getAuthHeaders();
-  return httpGet<AuthTokensRequest | null>(
-    getBackendUrl(`/api/users/tokens/${platform}`),
-    headers,
-  );
-};
+// const getPlatformAuthTokens = async (
+//   platform: Platform,
+// ): Promise<ApiResponse<AuthTokensRequest | null>> => {
+//   const headers = await getAuthHeaders();
+//   return httpGet<AuthTokensRequest | null>(
+//     getBackendUrl(`/api/users/tokens/${platform}`),
+//     headers,
+//   );
+// };
 
 /**
  * Health check endpoint

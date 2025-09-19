@@ -66,30 +66,46 @@ export const initializeAuth = async (): Promise<AuthSession.AuthRequest> => {
 export const handleCallback = async (
   code: string,
 ): Promise<{ id: string; username: string; displayName?: string }> => {
+  console.log('Twitter handleCallback: Starting with code:', code);
+  
   // Get the stored code verifier
   const codeVerifier = await SecureStore.getItemAsync(CODE_VERIFIER_KEY);
   if (!codeVerifier) {
+    console.error('Twitter handleCallback: Code verifier not found');
     throw new Error('Code verifier not found. Please try signing in again.');
   }
 
-  console.log('Retrieved code verifier:', codeVerifier);
-  console.log('Authorization code:', code);
+  console.log('Twitter handleCallback: Retrieved code verifier:', codeVerifier);
+  console.log('Twitter handleCallback: Authorization code:', code);
 
   // Exchange code for tokens
+  console.log('Twitter handleCallback: Exchanging code for tokens');
   const tokenResult = await exchangeCodeForTokens(code, codeVerifier);
+  console.log('Twitter handleCallback: Got token result:', { 
+    hasAccessToken: !!tokenResult.accessToken, 
+    hasRefreshToken: !!tokenResult.refreshToken,
+    expiresIn: tokenResult.expiresIn 
+  });
 
   // Get user info
+  console.log('Twitter handleCallback: Getting user info');
   const user = await getTwitterUser(tokenResult.accessToken);
+  console.log('Twitter handleCallback: Got user info:', { id: user.id, username: user.username });
 
   // Persist tokens in backend
-  await storePlatformAuthTokens({
-    platform: 'twitter',
+  console.log('Twitter handleCallback: Storing tokens in backend');
+  const tokenData = {
+    platform: 'twitter' as const,
     accessToken: tokenResult.accessToken,
     refreshToken: tokenResult.refreshToken,
     expiresIn: tokenResult.expiresIn,
     username: user.username,
-    userId: user.id,
-  });
+    platformUserId: user.id,
+  };
+  console.log('Twitter handleCallback: Token data to store:', tokenData);
+  
+  await storePlatformAuthTokens(tokenData);
+  console.log('Twitter handleCallback: Successfully stored tokens in backend');
 
   // Persist tokens in frontend
   await storePlatformTokens('twitter', {

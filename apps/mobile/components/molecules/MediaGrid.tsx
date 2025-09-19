@@ -1,10 +1,15 @@
 import MediaThumbnail from '@/components/atoms/MediaThumbnail';
-import type { MediaItem } from '@squidbox/contracts';
+import type { Media } from '@squidbox/contracts';
 import React from 'react';
 import { ScrollView } from 'react-native';
 
+type MediaWithId = Readonly<{
+  id: string;
+  uri: string;
+}> & Media;
+
 type MediaGridProps = Readonly<{
-  media: readonly MediaItem[];
+  media: readonly MediaWithId[];
   onRemove?: (id: string) => void;
 }>;
 

@@ -1,37 +1,37 @@
 import Button from '@/components/atoms/Button';
 import { PlatformComposer } from '@/components/organisms/PlatformComposer';
-import type { PlatformComposerData, PlatformPosts } from '@squidbox/contracts';
+import type { PlatformComposerData, PostGroup } from '@squidbox/contracts';
 import { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ComposeTemplateProps = Readonly<{
   userAvatarUri?: string;
-  onPost?: (platformPosts: readonly PlatformPosts[]) => void;
+  onPost?: (postGroups: readonly PostGroup[]) => void;
 }>;
 
 export default function ComposeTemplate({ userAvatarUri, onPost }: ComposeTemplateProps) {
   const insets = useSafeAreaInsets();
-  const [platformPosts, setPlatformPosts] = useState<readonly PlatformPosts[]>([]);
+  const [postGroups, setPostGroups] = useState<readonly PostGroup[]>([]);
 
   const handleDataChange = useCallback((data: PlatformComposerData) => {
-    setPlatformPosts(data.platformPosts);
+    setPostGroups(data.postGroups);
   }, []);
 
   const canPost = useMemo(() => {
-    return platformPosts.every((group) =>
+    return postGroups.every((group: PostGroup) =>
       group.posts.some((p) => p.text.trim().length > 0 || p.media.length > 0),
     );
-  }, [platformPosts]);
+  }, [postGroups]);
 
   const handlePost = useCallback(() => {
-    onPost?.(platformPosts);
-  }, [platformPosts, onPost]);
+    onPost?.(postGroups);
+  }, [postGroups, onPost]);
 
   // Get all selected platforms from all groups
   const selectedPlatforms = useMemo(() => {
-    return platformPosts.flatMap((group) => group.platforms);
-  }, [platformPosts]);
+    return postGroups.flatMap((group) => group.platforms);
+  }, [postGroups]);
 
   return (
     <KeyboardAvoidingView

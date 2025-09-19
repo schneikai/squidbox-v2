@@ -1,6 +1,6 @@
 import ComposeTemplate from '@/components/templates/ComposeTemplate';
 import { usePostSubmission } from '@/hooks/usePostSubmission';
-import type { PlatformPosts } from '@squidbox/contracts';
+import type { PostGroup } from '@squidbox/contracts';
 import React, { useCallback } from 'react';
 import { Alert } from 'react-native';
 
@@ -8,8 +8,8 @@ export default function ComposeTab() {
   const { submitPost, error } = usePostSubmission();
 
   const handlePost = useCallback(
-    async (platformPosts: readonly PlatformPosts[]) => {
-      await submitPost(platformPosts);
+    async (postGroups: readonly PostGroup[]) => {
+      await submitPost(postGroups);
 
       if (error) {
         Alert.alert('Error', error);

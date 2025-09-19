@@ -1,72 +1,86 @@
-import { z } from "zod";
+import { z } from 'zod';
 
-export const Platform = z.enum(["twitter", "bluesky", "onlyfans", "jff"]);
+// ============================================================================
+// CORE TYPES
+// ============================================================================
+
+export const Platform = z.enum(['twitter', 'bluesky', 'onlyfans', 'jff']);
 export type Platform = z.infer<typeof Platform>;
 
-export const OAuthTokensCreate = z.object({
-  platform: Platform,
-  accessToken: z.string().min(1),
-  refreshToken: z.string().optional(),
-  expiresIn: z.number().int().positive(),
-  username: z.string().min(1),
-  userId: z.string().min(1)
-});
-export type OAuthTokensCreate = z.infer<typeof OAuthTokensCreate>;
-
-// Post-related schemas
-export const MediaItem = z.object({
-  type: z.enum(["image", "video"]),
+export const Media = z.object({
+  type: z.enum(['image', 'video']),
   url: z.url(),
-  alt: z.string().optional(),
-  id: z.string(), // Local identifier for React keys (frontend only)
-  uri: z.string(), // Local file URI (frontend only)
+  localPath: z.string().optional(),
 });
-export type MediaItem = z.infer<typeof MediaItem>;
+export type Media = z.infer<typeof Media>;
 
-// Post types
 export const Post = z.object({
-  text: z.string().min(1, "Text cannot be empty"),
-  media: z.array(MediaItem),
+  text: z.string().min(1, 'Text cannot be empty'),
+  media: z.array(Media),
 });
 export type Post = z.infer<typeof Post>;
 
-export const PostList = z.array(Post);
-export type PostList = z.infer<typeof PostList>;
+// ============================================================================
+// COMPOSED TYPES
+// ============================================================================
 
-export const PlatformPosts = z.object({
+export const PlatformPost = z.object({
+  platform: Platform,
+  post: Post,
+  replyToId: z.string().optional(),
+});
+export type PlatformPost = z.infer<typeof PlatformPost>;
+
+export const PostGroup = z.object({
   platforms: z.array(Platform),
-  posts: PostList,
+  posts: z.array(Post),
 });
-export type PlatformPosts = z.infer<typeof PlatformPosts>;
+export type PostGroup = z.infer<typeof PostGroup>;
 
-export const PlatformComposerData = z.object({
-  platformPosts: z.array(PlatformPosts),
-});
-export type PlatformComposerData = z.infer<typeof PlatformComposerData>;
+// ============================================================================
+// API REQUEST/RESPONSE TYPES
+// ============================================================================
 
 export const CreatePostRequest = z.object({
-  platformPosts: z.array(PlatformPosts).min(1),
+  postGroups: z.array(PostGroup).min(1, 'At least one platform group must be provided'),
 });
 export type CreatePostRequest = z.infer<typeof CreatePostRequest>;
 
 export const PostResult = z.object({
   platform: Platform,
   success: z.boolean(),
-  postId: z.string().optional(),
+  platformPostId: z.string().optional(),
   error: z.string().optional(),
 });
 export type PostResult = z.infer<typeof PostResult>;
 
 export const CreatePostResponse = z.object({
   id: z.string(),
-  status: z.enum(["success", "partial", "failed"]),
+  status: z.enum(['pending', 'success', 'partial', 'failed']),
   platformResults: z.array(PostResult),
   createdAt: z.string(),
 });
 export type CreatePostResponse = z.infer<typeof CreatePostResponse>;
 
-export const ApiSuccess = <T extends z.ZodTypeAny>(data: T) =>
-  z.object({ success: z.literal(true), message: z.string().optional(), data });
-export const ApiError = z.object({ error: z.unknown() });
+// ============================================================================
+// FRONTEND COMPOSER TYPES
+// ============================================================================
 
+export const PlatformComposerData = z.object({
+  postGroups: z.array(PostGroup),
+});
+export type PlatformComposerData = z.infer<typeof PlatformComposerData>;
 
+// ============================================================================
+// OAUTH TYPES
+// ============================================================================
+
+export const OAuthTokensCreate = z.object({
+  platform: Platform,
+  accessToken: z.string().min(1, 'Access token is required'),
+  refreshToken: z.string().optional(),
+  expiresIn: z.number().positive('Expires in must be a positive number'),
+  username: z.string().min(1, 'Username is required'),
+  platformUserId: z.string().min(1, 'Platform user ID is required'),
+});
+export type OAuthTokensCreate = z.infer<typeof OAuthTokensCreate>;

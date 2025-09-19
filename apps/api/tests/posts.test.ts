@@ -1,6 +1,10 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApi } from '../src/api';
+import nock from 'nock';
+import { promises as fs } from 'fs';
+import path from 'path';
+import os from 'os';
 
 const app = createApi();
 import { createTweet } from '@squidbox/twitter-api';
@@ -15,8 +19,29 @@ const mockCreateTweet = vi.mocked(createTweet);
 
 describe('POST /api/post', () => {
   let authToken: string;
+  let tempDir: string;
 
   beforeEach(async () => {
+    // Create a temporary directory for test downloads
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'squidbox-test-'));
+    
+    // Mock the process.cwd() to use our temp directory
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    
+    // Setup nock to intercept HTTP requests
+    nock('https://example.com')
+      .get('/image.jpg')
+      .reply(200, 'fake image data')
+      .get('/video.mp4')
+      .reply(200, 'fake video data')
+      .get('/image1.jpg')
+      .reply(200, 'fake image1 data')
+      .get('/image2.jpg')
+      .reply(200, 'fake image2 data')
+      .get('/image3.jpg')
+      .reply(200, 'fake image3 data')
+      .get('/image4.jpg')
+      .reply(200, 'fake image4 data');
     // Create a test user and get auth token
     const userResponse = await request(app)
       .post('/api/auth/register')
@@ -43,7 +68,15 @@ describe('POST /api/post', () => {
     });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Clean up nock interceptors
+    nock.cleanAll();
+    
+    // Clean up temp directory
+    if (tempDir) {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+    
     vi.clearAllMocks();
   });
 
@@ -54,7 +87,7 @@ describe('POST /api/post', () => {
     });
 
     const postData: CreatePostRequest = {
-      platformPosts: [
+      postGroups: [
         {
           platforms: ['twitter'],
           posts: [
@@ -80,7 +113,7 @@ describe('POST /api/post', () => {
         {
           platform: 'twitter',
           success: true,
-          postId: '1234567890123456789',
+          platformPostId: '1234567890123456789',
         },
       ],
       createdAt: expect.any(String),
@@ -101,7 +134,7 @@ describe('POST /api/post', () => {
     });
 
     const postData: CreatePostRequest = {
-      platformPosts: [
+      postGroups: [
         {
           platforms: ['twitter'],
           posts: [
@@ -111,9 +144,6 @@ describe('POST /api/post', () => {
                 {
                   type: 'image',
                   url: 'https://example.com/image.jpg',
-                  alt: 'Test image',
-                  id: 'test-id',
-                  uri: 'https://example.com/image.jpg',
                 },
               ],
             },
@@ -135,7 +165,7 @@ describe('POST /api/post', () => {
         {
           platform: 'twitter',
           success: true,
-          postId: '1234567890123456789',
+          platformPostId: '1234567890123456789',
         },
       ],
     });
@@ -148,7 +178,7 @@ describe('POST /api/post', () => {
     });
 
     const postData: CreatePostRequest = {
-      platformPosts: [
+      postGroups: [
         {
           platforms: ['twitter'],
           posts: [
@@ -158,8 +188,6 @@ describe('POST /api/post', () => {
                 {
                   type: 'video',
                   url: 'https://example.com/video.mp4',
-                  id: 'test-id',
-                  uri: 'https://example.com/video.mp4',
                 },
               ],
             },
@@ -181,7 +209,7 @@ describe('POST /api/post', () => {
         {
           platform: 'twitter',
           success: true,
-          postId: '1234567890123456789',
+          platformPostId: '1234567890123456789',
         },
       ],
     });
@@ -194,7 +222,7 @@ describe('POST /api/post', () => {
     });
 
     const postData: CreatePostRequest = {
-      platformPosts: [
+      postGroups: [
         {
           platforms: ['twitter'],
           posts: [
@@ -204,26 +232,18 @@ describe('POST /api/post', () => {
                 {
                   type: 'image',
                   url: 'https://example.com/image1.jpg',
-                  id: 'test-id-1',
-                  uri: 'https://example.com/image1.jpg',
                 },
                 {
                   type: 'image',
                   url: 'https://example.com/image2.jpg',
-                  id: 'test-id-2',
-                  uri: 'https://example.com/image2.jpg',
                 },
                 {
                   type: 'image',
                   url: 'https://example.com/image3.jpg',
-                  id: 'test-id-3',
-                  uri: 'https://example.com/image3.jpg',
                 },
                 {
                   type: 'image',
                   url: 'https://example.com/image4.jpg',
-                  id: 'test-id-4',
-                  uri: 'https://example.com/image4.jpg',
                 },
               ],
             },
@@ -245,7 +265,7 @@ describe('POST /api/post', () => {
         {
           platform: 'twitter',
           success: true,
-          postId: '1234567890123456789',
+          platformPostId: '1234567890123456789',
         },
       ],
     });
@@ -258,7 +278,7 @@ describe('POST /api/post', () => {
     });
 
     const postData: CreatePostRequest = {
-      platformPosts: [
+      postGroups: [
         {
           platforms: ['twitter', 'bluesky'],
           posts: [
@@ -284,7 +304,7 @@ describe('POST /api/post', () => {
         {
           platform: 'twitter',
           success: true,
-          postId: '1234567890123456789',
+          platformPostId: '1234567890123456789',
         },
         {
           platform: 'bluesky',
@@ -297,7 +317,7 @@ describe('POST /api/post', () => {
 
   it('should return 401 without authentication', async () => {
     const postData: CreatePostRequest = {
-      platformPosts: [
+      postGroups: [
         {
           platforms: ['twitter'],
           posts: [
@@ -318,17 +338,9 @@ describe('POST /api/post', () => {
 
   it('should return 400 for invalid request body', async () => {
     const invalidData = {
-      platformPosts: [
-        {
-          platforms: ['twitter'],
-          posts: [
-            {
-              text: '', // Empty text should fail validation
-              media: [],
-            },
-          ],
-        },
-      ],
+      text: '', // Empty text should fail validation
+      media: [],
+      platforms: ['twitter'],
     };
 
     const response = await request(app)

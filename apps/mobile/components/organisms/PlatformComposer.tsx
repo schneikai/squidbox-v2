@@ -3,7 +3,7 @@ import CustomizeDialog from '@/components/molecules/CustomizeDialog';
 import PlatformSelectorDialog from '@/components/molecules/PlatformSelectorDialog';
 import SplitButton, { SplitButtonAction } from '@/components/molecules/SplitButton';
 import PostComposer from '@/components/organisms/PostComposer';
-import type { Platform , PlatformComposerData, PlatformPosts, PostList } from '@squidbox/contracts';
+import type { Platform , PlatformComposerData, Media } from '@squidbox/contracts';
 import { usePlatformContext } from '@/contexts/PlatformContext';
 import { TabView } from '@rneui/themed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,10 +12,22 @@ import { ScrollView, View } from 'react-native';
 // Platform selection type - only used in this component
 type PlatformSelection = Readonly<Record<Platform, boolean>>;
 
-type PostGroup = Readonly<{
+type PostGroupWithId = Readonly<{
   id: string;
+  platforms: Platform[];
+  posts: PostWithId[];
+}>;
+
+type MediaWithId = Readonly<{
+  id: string; // Local identifier for React keys (frontend only)
+  uri: string; // Local file URI (frontend only)
 }> &
-  PlatformPosts;
+  Media;
+
+type PostWithId = Readonly<{
+  text: string;
+  media: MediaWithId[];
+}>;
 
 type PlatformComposerProps = Readonly<{
   userAvatarUri?: string;
@@ -39,7 +51,7 @@ export function PlatformComposer({
 
   const [showPlatformSelector, setShowPlatformSelector] = useState(false);
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<PostGroup | null>(null);
+  const [editingGroup, setEditingGroup] = useState<PostGroupWithId | null>(null);
   const [activeGroupIndex, setActiveGroupIndex] = useState(0);
   const groupIdCounterRef = useRef(0);
 
@@ -47,12 +59,19 @@ export function PlatformComposer({
   const createUniqueGroupId = () => `group-${groupIdCounterRef.current++}`;
   
   // Post groups state - each group has platforms and a composer
-  const [postGroups, setPostGroups] = useState<PostGroup[]>(() => {
-    if (initialData?.platformPosts.length) {
-      return initialData.platformPosts.map((group) => ({
+  const [postGroups, setPostGroups] = useState<PostGroupWithId[]>(() => {
+    if (initialData?.postGroups.length) {
+      return initialData.postGroups.map((group) => ({
         id: createUniqueGroupId(),
         platforms: group.platforms,
-        posts: group.posts,
+        posts: group.posts.map(post => ({
+          text: post.text,
+          media: post.media.map(mediaItem => ({
+            ...mediaItem,
+            id: `media-${Date.now()}-${Math.random()}`,
+            uri: mediaItem.url, // Use URL as URI for now
+          }))
+        }))
       }));
     }
     // Default: create one group with connected platforms (will be updated when connectedPlatformNames changes)
@@ -66,25 +85,28 @@ export function PlatformComposer({
   });
 
   // Stable onPostChange callbacks per group id
-  const onPostChangeByGroupRef = useRef<Record<string, (posts: PostList) => void>>({});
+  const onPostChangeByGroupRef = useRef<Record<string, (posts: PostWithId[]) => void>>({});
 
   // Update default group when connected platforms change
   useEffect(() => {
-    if (
-      !initialData?.platformPosts.length &&
-      postGroups.length === 1 &&
-      postGroups[0].platforms.length === 0
-    ) {
-      // Only update if we have the default empty group
-      setPostGroups([
-        {
-          id: postGroups[0].id,
-          platforms: connectedPlatformNames,
-          posts: [],
-        },
-      ]);
-    }
-  }, [connectedPlatformNames, initialData?.platformPosts.length]);
+    setPostGroups((prevGroups) => {
+      if (
+        !initialData?.postGroups.length &&
+        prevGroups.length === 1 &&
+        prevGroups[0].platforms.length === 0
+      ) {
+        // Only update if we have the default empty group
+        return [
+          {
+            id: prevGroups[0].id,
+            platforms: connectedPlatformNames,
+            posts: [],
+          },
+        ];
+      }
+      return prevGroups;
+    });
+  }, [connectedPlatformNames, initialData?.postGroups.length]);
 
   const selectedPlatforms = useMemo(
     () => postGroups.flatMap((group) => group.platforms),
@@ -184,7 +206,7 @@ export function PlatformComposer({
             // Create new group
             targetGroupId = createUniqueGroupId();
             const activeGroup = postGroups[activeGroupIndex];
-            const newGroup: PostGroup = {
+            const newGroup: PostGroupWithId = {
               id: targetGroupId,
               platforms: newPlatforms,
               posts: [...activeGroup.posts],
@@ -240,7 +262,7 @@ export function PlatformComposer({
 
   useEffect(() => {
     onDataChange?.({
-      platformPosts: postGroups.map((g) => ({ platforms: g.platforms, posts: g.posts })),
+      postGroups: postGroups.map((g) => ({ platforms: g.platforms, posts: g.posts })),
     });
   }, [postGroups, onDataChange]);
 

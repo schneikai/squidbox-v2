@@ -112,36 +112,36 @@ export const httpPost = async <T = unknown>(
   });
 };
 
-const httpPut = async <T = unknown>(
-  url: string,
-  data?: unknown,
-  headers?: Record<string, string>,
-): Promise<ApiResponse<T>> => {
-  return makeRequest<T>(url, {
-    method: 'PUT',
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-  });
-};
+// const httpPut = async <T = unknown>(
+//   url: string,
+//   data?: unknown,
+//   headers?: Record<string, string>,
+// ): Promise<ApiResponse<T>> => {
+//   return makeRequest<T>(url, {
+//     method: 'PUT',
+//     headers,
+//     body: data ? JSON.stringify(data) : undefined,
+//   });
+// };
 
-const httpDelete = async <T = unknown>(
-  url: string,
-  headers?: Record<string, string>,
-): Promise<ApiResponse<T>> => {
-  return makeRequest<T>(url, {
-    method: 'DELETE',
-    headers,
-  });
-};
+// const httpDelete = async <T = unknown>(
+//   url: string,
+//   headers?: Record<string, string>,
+// ): Promise<ApiResponse<T>> => {
+//   return makeRequest<T>(url, {
+//     method: 'DELETE',
+//     headers,
+//   });
+// };
 
-const httpPatch = async <T = unknown>(
-  url: string,
-  data?: unknown,
-  headers?: Record<string, string>,
-): Promise<ApiResponse<T>> => {
-  return makeRequest<T>(url, {
-    method: 'PATCH',
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-  });
-};
+// const httpPatch = async <T = unknown>(
+//   url: string,
+//   data?: unknown,
+//   headers?: Record<string, string>,
+// ): Promise<ApiResponse<T>> => {
+//   return makeRequest<T>(url, {
+//     method: 'PATCH',
+//     headers,
+//     body: data ? JSON.stringify(data) : undefined,
+//   });
+// };

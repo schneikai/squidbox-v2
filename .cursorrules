@@ -1,35 +1,61 @@
-Squidbox v2 — Project structure (concise)
+# Cursor Rules
 
-Monorepo
+This file defines rules for the coding agent. Add new rules when the agent repeatedly suggests code that doesn't align with your project's requirements, specifications, or coding style, and you find yourself consistently correcting the same issues. This helps the agent understand your project's specific patterns and conventions, but also keeps the size of the rules file manageable. Don't add rules for things the agent already handles correctly.
 
-- pnpm workspaces + Turbo. Node 20.17.0 (use `nvm use`).
-- Root scripts: `pnpm dev` (parallel), `pnpm build`.
+**Rule Guidelines**
 
-apps/mobile (Expo React Native app)
+- Keep rules short and actionable
+- Keep rules current: update them when needed and remove those that are obsolete
+- Code snippets are optional. Do not add a snippet if the rule is already clear without it
+- Organize into the existing categories. New categories can be added if necessary
+- Do not use emojis
 
-- Routing in `apps/mobile/app/*` via expo-router.
-- UI in `components/*`; state/logic in `contexts/*`, `hooks/*`.
-- Talks to API via `services/backend.ts`.
+## Project Overview
 
-apps/api (Express API + Prisma)
+Squidbox is a social media cross-posting App that allows users to publish content to multiple social platforms simultaneously. The project is structured as a TypeScript monorepo with a mobile-first approach, featuring an Expo React Native app for content creation and an Express.js backend for platform integration and post management.
 
-- Dev entry: `apps/api/src/index.ts`. Launchers: `src/api-main.ts`, `src/worker-main.ts`.
-- Routes in `src/routes/*` (auth, users, health). Auth in `src/auth.ts`.
-- Prisma schema `prisma/schema.prisma`; migrations in `prisma/migrations/*`.
-- Queues in `src/queue.ts`; env in `src/env.ts` (`env.example`).
-- Tests in `tests/*`; deployment via `fly.*.toml`; Docker for db/redis.
+The architecture includes:
 
-packages/contracts (shared types/schemas)
+- **Mobile App** (`apps/mobile`): Expo React Native app with cross-platform posting capabilities
+- **API Backend** (`apps/api`): Express.js server with PostgreSQL database, OAuth token management, and background job processing
+- **Shared Contracts** (`packages/contracts`): TypeScript types and Zod schemas shared between frontend and backend
+- **Twitter API Package** (`packages/twitter-api`): Dedicated Twitter/X integration utilities
 
-- Source `packages/contracts/src/index.ts`; built by tsup to `dist/*`.
-- Imported as `@squidbox/contracts` by API and Mobile.
+The platform supports multiple social media platforms including Twitter/X, Bluesky, OnlyFans, and JFF (Just For Fans), with OAuth-based authentication and secure token storage. Users can compose posts with media attachments and distribute them across connected platforms with status tracking and error handling.
 
-Conventions
+Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma, BullMQ, Redis, pnpm, Turbo, Vitest, Zod.
 
-- Put shared Zod schemas/types in `packages/contracts` (avoid duplication).
-- When contracts change: update contracts → API routes → Mobile `services/backend.ts`.
+## General Conventions
 
-Useful commands
+<!-- Add rules about tone, style, naming, project-wide patterns -->
 
-- All: `pnpm dev`. API only: `pnpm -C apps/api dev`. Mobile: `pnpm -C apps/mobile dev`.
-- API env: copy `apps/api/env.example` to `.env`; use Docker Compose for db/redis when needed.
+- Run `nvm use` in the project root before starting work to ensure the correct Node version.
+- Use pnpm instead of npm for package management commands.
+- Add comments when business logic needs additional explanation, not just restate the code
+- Leave debug console.log statements added during active development and ignore the linter warnings - these are temporary and will be cleaned up when development is complete
+
+## TypeScript
+
+<!-- Add rules for typing, defaults, null/undefined handling, generics -->
+
+- Let the database handle ID generation instead of manually creating IDs (use `@default(cuid())` in Prisma schema)
+
+## React
+
+<!-- Add rules for hooks, components, props, rendering patterns -->
+
+## UI / Styling
+
+<!-- Add rules for Chakra UI, theming, design tokens, component styling -->
+
+## Database
+
+<!-- Add rules for Prisma, PostgreSQL, schema design -->
+
+- Prefer normalized database structures over JSON storage for better querying and maintainability
+- Use CUIDs for distributed systems (better than UUIDs for sortable, collision-resistant IDs)
+- Create junction tables for many-to-many relationships instead of storing arrays in JSON
+
+## Testing
+
+<!-- Add rules for Jest, Cypress, selectors, intercepts -->

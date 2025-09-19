@@ -1,4 +1,4 @@
-import { login as authLogin, register as authRegister, logout, hasLocalAuthToken, verifyAuthentication } from '@/services/auth';
+import { login as authLogin, register as authRegister, logout, verifyAuthentication } from '@/services/auth';
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 interface AuthContextType {

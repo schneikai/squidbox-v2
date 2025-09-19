@@ -21,9 +21,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.15.0",
     "@squidbox/contracts": "workspace:*",
     "@squidbox/twitter-api": "workspace:*",
-    "@prisma/client": "^6.15.0",
     "bcryptjs": "^3.0.2",
     "bullmq": "^5.24.0",
     "cors": "^2.8.5",
@@ -51,6 +51,7 @@
     "eslint-plugin-import": "^2.29.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
+    "nock": "^14.0.10",
     "pino-pretty": "^11.2.2",
     "prettier": "^3.3.3",
     "prisma": "^6.15.0",

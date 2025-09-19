@@ -1,6 +1,6 @@
 import { createPost, type CreatePostRequest, type CreatePostResponse } from '@/services/backend';
 import type { ApiError } from '@/services/http';
-import type { PlatformPosts } from '@squidbox/contracts';
+import type { PostGroup } from '@squidbox/contracts';
 import { useCallback, useState } from 'react';
 
 type PostSubmissionState = Readonly<{
@@ -9,7 +9,7 @@ type PostSubmissionState = Readonly<{
 }>;
 
 type PostSubmissionActions = Readonly<{
-  submitPost: (platformPosts: readonly PlatformPosts[]) => Promise<CreatePostResponse | null>;
+  submitPost: (postGroups: readonly PostGroup[]) => Promise<CreatePostResponse | null>;
 }>;
 
 export function usePostSubmission(): PostSubmissionState & PostSubmissionActions {
@@ -17,7 +17,7 @@ export function usePostSubmission(): PostSubmissionState & PostSubmissionActions
   const [error, setError] = useState<string | null>(null);
 
   const submitPost = useCallback(
-    async (platformPosts: readonly PlatformPosts[]): Promise<CreatePostResponse | null> => {
+    async (postGroups: readonly PostGroup[]): Promise<CreatePostResponse | null> => {
       if (isSubmitting) {
         return null;
       }
@@ -26,8 +26,22 @@ export function usePostSubmission(): PostSubmissionState & PostSubmissionActions
       setError(null);
 
       try {
+        const processedPostGroups: PostGroup[] = postGroups.map(group => ({
+          platforms: group.platforms,
+          posts: group.posts.map(post => ({
+            text: post.text,
+            media: post.media.map(mediaItem => ({
+              type: mediaItem.type,
+              url: mediaItem.type === 'video' 
+                ? process.env.EXPO_PUBLIC_S3_VIDEO_URL || ''
+                : process.env.EXPO_PUBLIC_S3_IMAGE_URL || '',
+              localPath: mediaItem.localPath,
+            }))
+          }))
+        }));
+
         const requestData: CreatePostRequest = {
-          platformPosts: platformPosts as CreatePostRequest['platformPosts'], // Cast to mutable type
+          postGroups: processedPostGroups as CreatePostRequest['postGroups'], // Cast to mutable type
         };
 
         const response = await createPost(requestData);

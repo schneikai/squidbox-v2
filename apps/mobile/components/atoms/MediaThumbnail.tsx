@@ -1,5 +1,5 @@
 import IconButton from '@/components/atoms/IconButton';
-import type { MediaItem } from '@squidbox/contracts';
+import type { Media } from '@squidbox/contracts';
 import { Icon, Text, useTheme } from '@rneui/themed';
 import { Image } from 'expo-image';
 import React from 'react';
@@ -7,7 +7,7 @@ import { View } from 'react-native';
 
 type MediaThumbnailProps = Readonly<{
   uri: string;
-  type?: MediaItem['type'];
+  type?: Media['type'];
   onRemove?: () => void;
 }>;
 

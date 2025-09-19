@@ -15,10 +15,12 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
 const tokensSchema = OAuthTokensCreate;
 
 router.post('/tokens', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  logger.info({ userId: req.user!.id, body: req.body }, 'Received token storage request');
 
   // Validate request body
   const parsed = tokensSchema.safeParse(req.body);
   if (!parsed.success) {
+    logger.error({ userId: req.user!.id, error: parsed.error.flatten() }, 'Token validation failed');
     return res.status(400).json({ error: parsed.error.flatten() });
   }
 
@@ -28,15 +30,31 @@ router.post('/tokens', authenticateToken, async (req: AuthenticatedRequest, res)
     refreshToken,
     expiresIn,
     username,
-    userId: platformUserId,
+    platformUserId,
   } = parsed.data;
+
+  logger.info({ 
+    userId: req.user!.id, 
+    platform, 
+    username, 
+    platformUserId,
+    hasAccessToken: !!accessToken,
+    hasRefreshToken: !!refreshToken,
+    expiresIn 
+  }, 'Processing token storage');
 
   try {
     // Calculate expiration date
     const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
+    logger.info({ 
+      userId: req.user!.id, 
+      platform, 
+      expiresAt 
+    }, 'Storing tokens in database');
+
     // Upsert OAuth tokens (update if exists, create if not)
-    await prisma.oAuthToken.upsert({
+    const result = await prisma.oAuthToken.upsert({
       where: {
         userId_platform: {
           userId: req.user!.id,
@@ -63,12 +81,18 @@ router.post('/tokens', authenticateToken, async (req: AuthenticatedRequest, res)
       },
     });
 
+    logger.info({ 
+      userId: req.user!.id, 
+      platform, 
+      tokenId: result.id 
+    }, 'Tokens stored successfully in database');
+
     res.json({
       success: true,
       message: 'Tokens stored successfully',
     });
   } catch (error) {
-    logger.error({ err: error }, 'Failed to store OAuth tokens');
+    logger.error({ err: error, userId: req.user!.id, platform }, 'Failed to store OAuth tokens');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

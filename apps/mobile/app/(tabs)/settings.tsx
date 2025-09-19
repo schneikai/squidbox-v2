@@ -33,7 +33,7 @@ export default function SettingsTab() {
         refreshToken: 'test_refresh_token_456',
         expiresIn: 3600,
         username: 'testuser',
-        userId: 'test_user_123',
+        platformUserId: 'test_user_123',
       });
 
       Alert.alert('Success', 'Test token stored successfully in backend!');
