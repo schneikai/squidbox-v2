@@ -1,8 +1,5 @@
 import { type Platform } from '@squidbox/contracts';
-import * as bluesky from './bluesky';
-import * as jff from './jff';
-import * as onlyfans from './onlyfans';
-import * as twitter from './twitter';
+import { getPlatformStatus, disconnectPlatform } from '../services/backend';
 
 export type PlatformUser = Readonly<{
   id: string;
@@ -10,22 +7,27 @@ export type PlatformUser = Readonly<{
   displayName?: string;
 }>;
 
-const platformProviders: Record<Platform, any> = {
-  twitter,
-  bluesky,
-  onlyfans,
-  jff,
-};
+export type PlatformStatus = Readonly<{
+  platform: string;
+  isConnected: boolean;
+  username: string | null;
+  expiresAt: string | null;
+}>;
 
+// Cache for platform status to avoid repeated API calls
+let platformStatusCache: PlatformStatus[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Returns true if the user has a valid access token for the platform
- * This does not make an API call to the platform, it only checks if the access token is present in the platform auth storage
+ * This checks with the backend to get the current connection status
  */
 export async function isConnected(platform: Platform): Promise<boolean> {
   try {
-    const provider = getProvider(platform);
-    return await provider.isConnected();
+    const statuses = await getPlatformStatuses();
+    const platformStatus = statuses.find(p => p.platform === platform);
+    return platformStatus?.isConnected || false;
   } catch (error) {
     console.error(`PlatformService.isConnected: Error checking connection for ${platform}:`, error);
     return false;
@@ -33,67 +35,150 @@ export async function isConnected(platform: Platform): Promise<boolean> {
 }
 
 /**
- * Get cached user info for a platform
- * This does not make an API call to the platform, it only returns the cached user info from the platform auth storage
+ * Get all platform connection statuses from backend
+ */
+export async function getPlatformStatuses(forceRefresh: boolean = false): Promise<PlatformStatus[]> {
+  const now = Date.now();
+  
+  // Return cached data if still valid and not forcing refresh
+  if (!forceRefresh && platformStatusCache && (now - cacheTimestamp) < CACHE_DURATION) {
+    return platformStatusCache;
+  }
+
+  try {
+    const response = await getPlatformStatus();
+    if (response.data) {
+      platformStatusCache = response.data;
+      cacheTimestamp = now;
+      return response.data;
+    }
+    
+    // If API call fails, return cached data if available
+    if (platformStatusCache) {
+      console.warn('PlatformService.getPlatformStatuses: API call failed, returning cached data');
+      return platformStatusCache;
+    }
+    
+    // If no cached data, return empty array
+    return [];
+  } catch (error) {
+    console.error('PlatformService.getPlatformStatuses: Error fetching platform statuses:', error);
+    
+    // Return cached data if available
+    if (platformStatusCache) {
+      console.warn('PlatformService.getPlatformStatuses: Error occurred, returning cached data');
+      return platformStatusCache;
+    }
+    
+    return [];
+  }
+}
+
+/**
+ * Get user info for a platform from backend
  */
 export async function getCachedUser(platform: Platform): Promise<PlatformUser | null> {
   try {
-    const provider = getProvider(platform);
-    return await provider.getCachedUser();
+    const statuses = await getPlatformStatuses();
+    const platformStatus = statuses.find(p => p.platform === platform);
+    
+    if (platformStatus?.isConnected && platformStatus.username) {
+      return {
+        id: platformStatus.username, // Use username as ID for now
+        username: platformStatus.username,
+        displayName: platformStatus.username,
+      };
+    }
+    
+    return null;
   } catch (error) {
-    console.error(`PlatformService.getCachedUser: Error getting cached user for ${platform}:`, error);
+    console.error(`PlatformService.getCachedUser: Error getting user for ${platform}:`, error);
     return null;
   }
 }
 
 /**
- * Sign out from a platform
- * This deletes the access token from the platform auth storage
+ * Clear platform status cache to force refresh from backend
  */
-export async function signOut(platform: Platform): Promise<void> {
+export function clearPlatformStatusCache(): void {
+  platformStatusCache = null;
+  cacheTimestamp = 0;
+}
+
+/**
+ * Refresh authentication status by clearing cache and fetching fresh data
+ */
+export async function refreshAuthStatus(platform: Platform): Promise<void> {
   try {
-    const provider = getProvider(platform);
-    await provider.signOut();
+    console.log(`PlatformService.refreshAuthStatus: Refreshing auth status for ${platform}`);
+    clearPlatformStatusCache();
+    await getPlatformStatuses(true);
   } catch (error) {
-    console.error(`PlatformService.signOut: Error signing out from ${platform}:`, error);
+    console.error(`PlatformService.refreshAuthStatus: Error refreshing auth status for ${platform}:`, error);
+  }
+}
+
+/**
+ * Disconnect a platform by deleting its tokens from the backend
+ */
+export async function disconnectPlatformTokens(platform: Platform): Promise<void> {
+  try {
+    console.log(`PlatformService.disconnectPlatformTokens: Disconnecting ${platform}`);
+    const response = await disconnectPlatform(platform);
+    
+    if (response.data?.success) {
+      console.log(`PlatformService.disconnectPlatformTokens: Successfully disconnected ${platform}`);
+      // Clear the cache to force refresh on next check
+      clearPlatformStatusCache();
+    } else {
+      throw new Error(`Failed to disconnect ${platform}: ${response.data?.message || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error(`PlatformService.disconnectPlatformTokens: Error disconnecting ${platform}:`, error);
     throw error;
   }
 }
 
 /**
  * Handle OAuth callback for a platform
+ * Routes to the appropriate platform-specific handler
  */
 export async function handleCallback(platform: Platform, code: string): Promise<PlatformUser> {
   try {
-    const provider = getProvider(platform);
-    return await provider.handleCallback(code);
+    console.log(`PlatformService.handleCallback: Handling callback for ${platform}`);
+    
+    let result: PlatformUser;
+    
+    // Route to platform-specific handler
+    switch (platform) {
+      case 'twitter': {
+        const { handleCallback: twitterHandleCallback } = await import('./twitter');
+        result = await twitterHandleCallback(code);
+        break;
+      }
+      case 'bluesky': {
+        const { handleCallback: blueskyHandleCallback } = await import('./bluesky');
+        result = await blueskyHandleCallback();
+        break;
+      }
+      case 'onlyfans': {
+        const { handleCallback: onlyfansHandleCallback } = await import('./onlyfans');
+        result = await onlyfansHandleCallback();
+        break;
+      }
+      case 'jff': {
+        const { handleCallback: jffHandleCallback } = await import('./jff');
+        result = await jffHandleCallback();
+        break;
+      }
+      default:
+        throw new Error(`Unsupported platform: ${platform}`);
+    }
+
+    console.log(`PlatformService.handleCallback: Successfully connected to ${platform}`);
+    return result;
   } catch (error) {
     console.error(`PlatformService.handleCallback: Error handling callback for ${platform}:`, error);
     throw error;
   }
-}
-
-/**
- * Refresh authentication status
- * This makes an API call to the platform to validate the access token
- * If response from platform is 401 unauthorized, it deletes the access token from the platform auth storage
- * Other network errors are ignored to make it offline-friendly
- */
-export async function refreshAuthStatus(platform: Platform): Promise<void> {
-  try {
-    const provider = getProvider(platform);
-    // Check if the provider has a refreshAuthStatus function
-    if ('refreshAuthStatus' in provider && typeof provider.refreshAuthStatus === 'function') {
-      console.log(`PlatformService.refreshAuthStatus: Refreshing auth status for ${platform}`);
-      await provider.refreshAuthStatus();
-    } else {
-     console.log(`PlatformService.refreshAuthStatus: Provider ${platform} does not have a refreshAuthStatus function`);
-    }
-  } catch (error) {
-    console.error(`PlatformService.refreshAuthStatus: Error refreshing auth status for ${platform}:`, error);
-  }
-}
-
-function getProvider(platform: Platform) {
-  return platformProviders[platform];
 }

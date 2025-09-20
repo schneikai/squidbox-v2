@@ -1,6 +1,6 @@
 import { usePlatformContext } from '@/contexts/PlatformContext';
 import type { Platform } from '@squidbox/contracts';
-import { getCachedUser, refreshAuthStatus, isConnected, signOut } from '@/utils/platformService';
+import { getCachedUser, refreshAuthStatus, isConnected, disconnectPlatformTokens } from '@/utils/platformService';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
@@ -16,7 +16,7 @@ interface UsePlatformCardProps {
 }
 
 export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformCardProps) {
-  const { supportedPlatforms } = usePlatformContext();
+  const { supportedPlatforms, onPlatformDisconnected } = usePlatformContext();
   const [status, setStatus] = useState<PlatformStatus>({ isConnected: false });
   const [isRefreshingInternal, setIsRefreshingInternal] = useState(false);
 
@@ -71,9 +71,21 @@ export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformC
             text: 'Disconnect',
             style: 'destructive',
             onPress: async () => {
-              await signOut(platform);
-              // Trigger a refresh after sign out
-              getCurrentStatus().then(setStatus);
+              try {
+                // Disconnect the platform by deleting tokens from backend
+                await disconnectPlatformTokens(platform);
+                
+                // Notify the platform context that a platform was disconnected
+                onPlatformDisconnected();
+                
+                // Update local status
+                getCurrentStatus().then(setStatus);
+                
+                Alert.alert('Success', `Successfully disconnected from ${config.name}!`);
+              } catch (error) {
+                console.error('Error disconnecting platform:', error);
+                Alert.alert('Error', 'Failed to disconnect from the platform. Please try again.');
+              }
             },
           },
         ],

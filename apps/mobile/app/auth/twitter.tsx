@@ -1,5 +1,6 @@
 import Icon from '@/components/atoms/Icon';
 import { useAuthVerification } from '@/hooks/useAuthVerification';
+import { usePlatformContext } from '@/contexts/PlatformContext';
 import { initializeAuth } from '@/utils/twitter';
 import { handleCallback } from '@/utils/platformService';
 import { Button, Text, useTheme } from '@rneui/themed';
@@ -26,6 +27,7 @@ const discovery = {
 export default function TwitterAuthPage() {
   const { theme } = useTheme();
   const { ensureAuth } = useAuthVerification();
+  const { onPlatformConnected } = usePlatformContext();
   const [isLoading, setIsLoading] = useState(false);
   const [request, setRequest] = useState<AuthSession.AuthRequest | null>(null);
 
@@ -61,6 +63,9 @@ export default function TwitterAuthPage() {
 
         // Use unified platform interface to complete auth and persist tokens
         await handleCallback('twitter', code);
+
+        // Notify the platform context that a platform was connected
+        onPlatformConnected();
 
         Alert.alert('Success', 'Successfully connected to Twitter!', [
           { text: 'OK', onPress: () => router.back() },

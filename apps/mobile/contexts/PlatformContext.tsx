@@ -1,10 +1,14 @@
-import { isConnected } from '@/utils/platformService';
+import { getPlatformStatuses } from '@/utils/platformService';
 import { Platform, PLATFORM_CONFIGS, SUPPORTED_PLATFORMS, type PlatformConfig } from '@squidbox/contracts';
-import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 
 type PlatformContextType = Readonly<{
   supportedPlatforms: typeof SUPPORTED_PLATFORMS;
   connectedPlatforms: Readonly<PlatformConfig[]>;
+  isLoading: boolean;
+  refreshPlatforms: () => Promise<void>;
+  onPlatformConnected: () => void;
+  onPlatformDisconnected: () => void;
 
   // Platform configurations
   platformConfigs: Record<Platform, PlatformConfig>;
@@ -20,33 +24,53 @@ export function PlatformProvider({ children }: PlatformProviderProps) {
   const [connectedPlatforms, setConnectedPlatforms] = useState<
     typeof SUPPORTED_PLATFORMS
   >([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshPlatforms = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      console.log('PlatformProvider: Refreshing platform statuses...');
+      const statuses = await getPlatformStatuses(true);
+      
+      const connected = SUPPORTED_PLATFORMS.filter(platform => {
+        const status = statuses.find(s => s.platform === platform.id);
+        return status?.isConnected || false;
+      });
+      
+      console.log('PlatformProvider: Connected platforms:', connected.map(p => p.id));
+      setConnectedPlatforms(connected);
+    } catch (error) {
+      console.error('PlatformProvider: Error refreshing platforms:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const onPlatformConnected = useCallback(() => {
+    console.log('PlatformProvider: Platform connected, refreshing...');
+    refreshPlatforms();
+  }, [refreshPlatforms]);
+
+  const onPlatformDisconnected = useCallback(() => {
+    console.log('PlatformProvider: Platform disconnected, refreshing...');
+    refreshPlatforms();
+  }, [refreshPlatforms]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      const results = await Promise.all(
-        SUPPORTED_PLATFORMS.map(async (platform) =>
-          (await isConnected(platform.id)) ? platform : null
-        )
-      );
-      if (!cancelled) {
-        setConnectedPlatforms(results.filter(Boolean) as typeof SUPPORTED_PLATFORMS);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    refreshPlatforms();
+  }, [refreshPlatforms]);
 
   const contextValue = useMemo(
     () => ({
       supportedPlatforms: SUPPORTED_PLATFORMS,
       connectedPlatforms,
+      isLoading,
+      refreshPlatforms,
+      onPlatformConnected,
+      onPlatformDisconnected,
       platformConfigs: PLATFORM_CONFIGS,
     }),
-    [connectedPlatforms]
+    [connectedPlatforms, isLoading, refreshPlatforms, onPlatformConnected, onPlatformDisconnected]
   );
 
   return (

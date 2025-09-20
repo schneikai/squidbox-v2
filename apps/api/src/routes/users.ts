@@ -134,4 +134,85 @@ router.get('/tokens/:platform', authenticateToken, async (req: AuthenticatedRequ
   });
 });
 
+// Check platform connection status
+router.get('/platforms/status', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  logger.info({ userId: req.user!.id }, 'Checking platform connection status');
+
+  const platforms = await prisma.oAuthToken.findMany({
+    where: {
+      userId: req.user!.id,
+    },
+    select: {
+      platform: true,
+      username: true,
+      expiresAt: true,
+    },
+  });
+
+  // Create a map of platform statuses
+  const platformStatuses = SUPPORTED_PLATFORMS.map(platform => {
+    const token = platforms.find(p => p.platform === platform.id);
+    const isConnected = token && (!token.expiresAt || token.expiresAt > new Date());
+    
+    return {
+      platform: platform.id,
+      isConnected: Boolean(isConnected), // Ensure it's a boolean
+      username: token?.username || null,
+      expiresAt: token?.expiresAt || null,
+    };
+  });
+
+  logger.info({ 
+    userId: req.user!.id, 
+    connectedPlatforms: platformStatuses.filter(p => p.isConnected).length 
+  }, 'Platform status check completed');
+
+  res.json(platformStatuses);
+});
+
+// Delete OAuth tokens for a specific platform
+router.delete('/tokens/:platform', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  const { platform } = req.params;
+
+  if (!platform) {
+    return res.status(400).json({ error: 'Platform parameter is required' });
+  }
+
+  // Validate platform parameter
+  const validPlatforms = SUPPORTED_PLATFORMS.map(p => p.id);
+  if (!validPlatforms.includes(platform as Platform)) {
+    return res.status(400).json({ error: 'Invalid platform parameter' });
+  }
+
+  logger.info({ userId: req.user!.id, platform }, 'Deleting platform tokens');
+
+  try {
+    const result = await prisma.oAuthToken.deleteMany({
+      where: {
+        userId: req.user!.id,
+        platform: platform as Platform,
+      },
+    });
+
+    if (result.count === 0) {
+      logger.warn({ userId: req.user!.id, platform }, 'No tokens found to delete');
+      return res.status(404).json({ error: 'No tokens found for this platform' });
+    }
+
+    logger.info({ 
+      userId: req.user!.id, 
+      platform, 
+      deletedCount: result.count 
+    }, 'Platform tokens deleted successfully');
+
+    res.json({
+      success: true,
+      message: 'Platform disconnected successfully',
+    });
+  } catch (error) {
+    logger.error({ userId: req.user!.id, platform, error }, 'Error deleting platform tokens');
+    res.status(500).json({ error: 'Failed to disconnect platform' });
+  }
+});
+
 export default router;

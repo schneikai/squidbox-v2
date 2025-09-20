@@ -5,8 +5,8 @@ import type {
 } from '@squidbox/contracts';
 export type { CreatePostRequest, CreatePostResponse } from '@squidbox/contracts';
 import Constants from 'expo-constants';
-import { httpGet, httpPost, type ApiResponse } from './http';
-import { getStoredAuthToken } from './auth';
+import * as SecureStore from 'expo-secure-store';
+import { httpGet, httpPost, httpDelete, type ApiResponse } from './http';
 
 type AuthTokensRequest = OAuthTokensCreate;
 
@@ -55,7 +55,7 @@ export const getBackendBaseUrl = (): string => {
 
 // Get authentication headers for backend requests
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  const token = await getStoredAuthToken();
+  const token = await SecureStore.getItemAsync('jwt_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
@@ -134,6 +134,38 @@ export const createPost = async (
 ): Promise<ApiResponse<CreatePostResponse>> => {
   const headers = await getAuthHeaders();
   return httpPost<CreatePostResponse>(getBackendUrl('/api/post'), postData, headers);
+};
+
+/**
+ * Get platform connection status from backend
+ */
+export const getPlatformStatus = async (): Promise<ApiResponse<{
+  platform: string;
+  isConnected: boolean;
+  username: string | null;
+  expiresAt: string | null;
+}[]>> => {
+  const headers = await getAuthHeaders();
+  return httpGet<{
+    platform: string;
+    isConnected: boolean;
+    username: string | null;
+    expiresAt: string | null;
+  }[]>(getBackendUrl('/api/users/platforms/status'), headers);
+};
+
+/**
+ * Disconnect a platform by deleting its tokens from backend
+ */
+export const disconnectPlatform = async (platform: string): Promise<ApiResponse<{
+  success: boolean;
+  message: string;
+}>> => {
+  const headers = await getAuthHeaders();
+  return httpDelete<{
+    success: boolean;
+    message: string;
+  }>(getBackendUrl(`/api/users/tokens/${platform}`), headers);
 };
 
 

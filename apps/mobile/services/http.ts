@@ -124,15 +124,15 @@ export const httpPost = async <T = unknown>(
 //   });
 // };
 
-// const httpDelete = async <T = unknown>(
-//   url: string,
-//   headers?: Record<string, string>,
-// ): Promise<ApiResponse<T>> => {
-//   return makeRequest<T>(url, {
-//     method: 'DELETE',
-//     headers,
-//   });
-// };
+export const httpDelete = async <T = unknown>(
+  url: string,
+  headers?: Record<string, string>,
+): Promise<ApiResponse<T>> => {
+  return makeRequest<T>(url, {
+    method: 'DELETE',
+    headers,
+  });
+};
 
 // const httpPatch = async <T = unknown>(
 //   url: string,

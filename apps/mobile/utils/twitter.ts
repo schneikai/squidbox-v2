@@ -2,9 +2,7 @@ import * as AuthSession from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
 import {
   getTwitterUser,
-  type TwitterUser,
 } from '@squidbox/twitter-api';
-import { getPlatformTokens, clearPlatformTokens, storePlatformTokens } from '@/services/platformTokenStorage';
 import { storePlatformAuthTokens } from '@/services/backend';
 import { type PlatformUser } from './platformService';
 
@@ -109,15 +107,6 @@ export const handleCallback = async (
   await storePlatformAuthTokens(tokenData);
   console.log('Twitter handleCallback: Successfully stored tokens in backend');
 
-  // Persist tokens in frontend
-  await storePlatformTokens('twitter', {
-    accessToken: tokenResult.accessToken,
-    refreshToken: tokenResult.refreshToken,
-    expiresIn: tokenResult.expiresIn,
-    username: user.username,
-    userId: user.id,
-  });
-
   return {
     id: user.id,
     username: user.username,
@@ -126,59 +115,38 @@ export const handleCallback = async (
 };
 
 /**
- * Check if user is connected (uses platform auth storage)
+ * Check if user is connected (now handled by backend)
+ * This method is kept for compatibility but should not be used directly
  */
 export const isConnected = async (): Promise<boolean> => {
-  return !!(await getAccessToken());
+  console.warn('Twitter.isConnected: This method is deprecated. Use platformService.isConnected instead.');
+  return false;
 };
 
 /**
- * Get Twitter user from cache only (no API call)
+ * Get Twitter user from cache only (now handled by backend)
+ * This method is kept for compatibility but should not be used directly
  */
 export const getCachedUser = async (): Promise<PlatformUser | null> => {
- const tokens = await getPlatformTokens('twitter');
-
-  if (!tokens?.username || !tokens?.userId) {
-    throw new Error('No username or user ID found');
-  }
-
-  return {
-    id: tokens.userId,
-    username: tokens.username,
-    displayName: tokens.username, 
-  };
+  console.warn('Twitter.getCachedUser: This method is deprecated. Use platformService.getCachedUser instead.');
+  return null;
 };
 
 
 /**
- * Refresh authentication status by making an API call
+ * Refresh authentication status (now handled by backend)
+ * This method is kept for compatibility but should not be used directly
  */
 export const refreshAuthStatus = async (): Promise<void> => {
-  console.log('Refreshing Twitter auth status');
-  
-  try {
-    await getUser();
-  } catch (error) {
-    console.error('Error refreshing Twitter auth status:', error);
-    
-    // Check if it's an unauthorized error (401)
-    if (error instanceof Error && error.message === 'unauthorized') {
-      console.log('Unauthorized response, clearing cached data');
-      await signOut();
-    } else {
-      console.log('Non-unauthorized error, keeping cached data');
-    }
-    // Re-throw the error to let consumers handle it
-    throw error;
-  }
+  console.warn('Twitter.refreshAuthStatus: This method is deprecated. Use platformService.refreshAuthStatus instead.');
 };
 
 /**
- * Sign out (clear all stored data from platform auth storage)
+ * Sign out (now handled by backend)
+ * This method is kept for compatibility but should not be used directly
  */
 export const signOut = async (): Promise<void> => {
-  // Clear platform auth storage
-  await clearPlatformTokens('twitter');
+  console.warn('Twitter.signOut: This method is deprecated. Sign out is now handled by the backend.');
   
   // Clear code verifier (still needed for OAuth flow)
   await SecureStore.deleteItemAsync(CODE_VERIFIER_KEY);
@@ -186,27 +154,6 @@ export const signOut = async (): Promise<void> => {
 
 
 // Helpers
-
-/**
- * Get Twitter user with API call and cache the result
- */
-const getUser = async (): Promise<TwitterUser | null> => {
-  const accessToken = await getAccessToken();
-  return await getTwitterUser(accessToken);
-};
-
-/**
- * Get stored access token (from platform auth storage)
- */
-const getAccessToken = async (): Promise<string> => {
-  const tokens = await getPlatformTokens('twitter');
-
-  if (!tokens?.accessToken) {
-    throw new Error('No access token found');
-  }
-
-  return tokens.accessToken;
-};
 
 /**
  * Exchange authorization code for access and refresh tokens
