@@ -3,6 +3,65 @@ import { z } from 'zod';
 export const Platform = z.enum(['twitter', 'bluesky', 'onlyfans', 'jff']);
 export type Platform = z.infer<typeof Platform>;
 
+// Platform configuration types and constants
+export type PlatformConfig = Readonly<{
+  id: Platform;
+  name: string;
+  icon: string;
+  color: string;
+  characterLimit: number;
+  maxMedia: number;
+  supportsVideo: boolean;
+  supportsMultiplePosts: boolean;
+  authUrl?: string;
+}>;
+
+export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
+  twitter: {
+    id: 'twitter',
+    name: 'Twitter',
+    icon: 'twitter',
+    color: '#1DA1F2',
+    characterLimit: 280,
+    maxMedia: 4,
+    supportsVideo: true,
+    supportsMultiplePosts: true,
+    authUrl: '/auth/twitter',
+  },
+  bluesky: {
+    id: 'bluesky',
+    name: 'Bluesky',
+    icon: 'cloud',
+    color: '#00A8E8',
+    characterLimit: 300,
+    maxMedia: 4,
+    supportsVideo: true,
+    supportsMultiplePosts: true,
+  },
+  onlyfans: {
+    id: 'onlyfans',
+    name: 'OnlyFans',
+    icon: 'heart',
+    color: '#00AFF0',
+    characterLimit: 500,
+    maxMedia: 10,
+    supportsVideo: true,
+    supportsMultiplePosts: false,
+  },
+  jff: {
+    id: 'jff',
+    name: 'JFF',
+    icon: 'camera',
+    color: '#FF6B6B',
+    characterLimit: 1000,
+    maxMedia: 20,
+    supportsVideo: true,
+    supportsMultiplePosts: false,
+  },
+} as const;
+
+export const SUPPORTED_PLATFORMS = Object.values(PLATFORM_CONFIGS) as Readonly<PlatformConfig[]>;
+
 export const Media = z.object({
   type: z.enum(['image', 'video']),
   url: z.url(),

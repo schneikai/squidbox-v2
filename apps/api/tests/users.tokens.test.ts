@@ -1,7 +1,8 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Platform } from '@prisma/client';
+import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { createApi } from '../src/api';
 import { signJwt } from '../src/auth';
 
@@ -248,7 +249,7 @@ describe('Users Routes - POST /tokens', () => {
   });
 
   it('should handle all supported platforms', async () => {
-    const platforms = ['twitter', 'bluesky', 'onlyfans', 'jff'];
+    const platforms = SUPPORTED_PLATFORMS.map(p => p.id);
 
     for (const platform of platforms) {
       const platformData = {

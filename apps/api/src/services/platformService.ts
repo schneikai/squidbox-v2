@@ -5,12 +5,12 @@ import * as blueskyProvider from './providers/bluesky.js';
 import * as onlyfansProvider from './providers/onlyfans.js';
 import * as jffProvider from './providers/jff.js';
 
-const platformProviders = {
+const platformProviders: Record<Platform, any> = {
   twitter: twitterProvider,
   bluesky: blueskyProvider,
   onlyfans: onlyfansProvider,
   jff: jffProvider,
-} as const;
+};
 
 /**
  * Post content to a specific platform
@@ -19,33 +19,19 @@ export async function postToPlatform(
   userId: string,
   platformPost: PlatformPost
 ): Promise<PostResult> {
-  try {
-    logger.info({ userId, platform: platformPost.platform }, 'Starting platform post');
-    const provider = getProvider(platformPost.platform);
-    const result = await provider.post(userId, platformPost);
-    logger.info({ userId, platform: platformPost.platform, success: result.success }, 'Platform post completed');
-    return result;
-  } catch (error) {
-    logger.error({ err: error, platform: platformPost.platform }, 'Error posting to platform');
-    return {
-      platform: platformPost.platform,
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  logger.info({ userId, platform: platformPost.platform }, 'Starting platform post');
+  const provider = getProvider(platformPost.platform);
+  const result = await provider.post(userId, platformPost);
+  logger.info({ userId, platform: platformPost.platform, success: result.success }, 'Platform post completed');
+  return result;
 }
 
 /**
  * Check if user has valid authentication for a platform
  */
 export async function isConnected(userId: string, platform: Platform): Promise<boolean> {
-  try {
-    const provider = getProvider(platform);
-    return await provider.isConnected(userId);
-  } catch (error) {
-    logger.error({ err: error, platform }, 'Error checking platform connection');
-    return false;
-  }
+  const provider = getProvider(platform);
+  return await provider.isConnected(userId);
 }
 
 function getProvider(platform: Platform) {

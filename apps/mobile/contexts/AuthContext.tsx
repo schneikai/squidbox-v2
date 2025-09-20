@@ -21,7 +21,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await verifyAuthentication();
       console.log('AuthProvider.checkAuthStatusAsync: authentication result:', result);
       setIsAuthenticated(result.success);
-
     } catch (error) {
       console.error('AuthProvider.checkAuthStatusAsync: error checking auth status:', error);
       setIsAuthenticated(false);
@@ -37,11 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleLogin = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await authLogin({ email, password });
-      if (response.success) {
-        setIsAuthenticated(true);
-        return true;
-      }
-      return false;
+      setIsAuthenticated(true);
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -51,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleRegister = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await authRegister({ email, password });
-      return { success: response.success, error: response.error };
+      return { success: true };
     } catch (error) {
       console.error('Register error:', error);
       return { success: false, error: 'Registration failed' };
@@ -64,6 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Logout error:', error);
+      // Still set authenticated to false even if logout fails
+      setIsAuthenticated(false);
     }
   };
 

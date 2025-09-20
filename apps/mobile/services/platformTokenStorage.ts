@@ -1,6 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import { type Platform } from '@squidbox/contracts';
-import { PLATFORM_CONFIGS } from '@/contexts/PlatformContext';
+import { type Platform, PLATFORM_CONFIGS } from '@squidbox/contracts';
 
 export type PlatformAuthTokens = Readonly<{
   accessToken: string;

@@ -10,30 +10,25 @@ import type { Media } from '@prisma/client';
  * Check if user has valid Twitter authentication
  */
 export async function isConnected(userId: string): Promise<boolean> {
-  try {
-    const tokens = await prisma.oAuthToken.findUnique({
-      where: {
-        userId_platform: {
-          userId,
-          platform: 'twitter',
-        },
+  const tokens = await prisma.oAuthToken.findUnique({
+    where: {
+      userId_platform: {
+        userId,
+        platform: 'twitter',
       },
-    });
+    },
+  });
 
-    if (!tokens) {
-      return false;
-    }
-
-    // Check if token is expired
-    if (tokens.expiresAt && tokens.expiresAt < new Date()) {
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    logger.error({ err: error, userId }, 'Error checking Twitter connection');
+  if (!tokens) {
     return false;
   }
+
+  // Check if token is expired
+  if (tokens.expiresAt && tokens.expiresAt < new Date()) {
+    return false;
+  }
+
+  return true;
 }
 
 /**

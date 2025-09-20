@@ -1,65 +1,6 @@
 import { isConnected } from '@/utils/platformService';
-import type { Platform } from '@squidbox/contracts';
+import { Platform, PLATFORM_CONFIGS, SUPPORTED_PLATFORMS, type PlatformConfig } from '@squidbox/contracts';
 import React, { createContext, useContext, useMemo, useState, useEffect } from 'react';
-
-
-type PlatformConfig = Readonly<{
-  id: Platform;
-  name: string;
-  icon: string;
-  color: string;
-  characterLimit: number;
-  maxMedia: number;
-  supportsVideo: boolean;
-  supportsMultiplePosts: boolean;
-  authUrl?: string;
-}>;
-
-export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
-  twitter: {
-    id: 'twitter',
-    name: 'Twitter',
-    icon: 'twitter',
-    color: '#1DA1F2',
-    characterLimit: 280,
-    maxMedia: 4,
-    supportsVideo: true,
-    supportsMultiplePosts: true,
-    authUrl: '/auth/twitter',
-  },
-  bluesky: {
-    id: 'bluesky',
-    name: 'Bluesky',
-    icon: 'cloud',
-    color: '#00A8E8',
-    characterLimit: 300,
-    maxMedia: 4,
-    supportsVideo: true,
-    supportsMultiplePosts: true,
-  },
-  onlyfans: {
-    id: 'onlyfans',
-    name: 'OnlyFans',
-    icon: 'heart',
-    color: '#00AFF0',
-    characterLimit: 500,
-    maxMedia: 10,
-    supportsVideo: true,
-    supportsMultiplePosts: false,
-  },
-  jff: {
-    id: 'jff',
-    name: 'JFF',
-    icon: 'camera',
-    color: '#FF6B6B',
-    characterLimit: 1000,
-    maxMedia: 20,
-    supportsVideo: true,
-    supportsMultiplePosts: false,
-  },
-} as const;
-
-const SUPPORTED_PLATFORMS = Object.values(PLATFORM_CONFIGS) as Readonly<PlatformConfig[]>;
 
 type PlatformContextType = Readonly<{
   supportedPlatforms: typeof SUPPORTED_PLATFORMS;

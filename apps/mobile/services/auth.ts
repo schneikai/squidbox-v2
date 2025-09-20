@@ -39,38 +39,23 @@ type AuthVerificationResult = {
 /**
  * Login user and store JWT token
  */
-export const login = async (credentials: LoginRequest): Promise<{ success: boolean; data?: LoginResponse; error?: string }> => {
-  try {
-    const response = await loginUser(credentials);
-    
-    // Store JWT token if login successful
-    if (response.data?.token) {
-      await SecureStore.setItemAsync(JWT_TOKEN_KEY, response.data.token);
-    }
-    
-    return { success: true, data: response.data };
-  } catch (error) {
-    return { 
-      success: false, 
-      error: isApiError(error) ? error.message : 'Login failed' 
-    };
+export const login = async (credentials: LoginRequest): Promise<LoginResponse> => {
+  const response = await loginUser(credentials);
+  
+  // Store JWT token if login successful
+  if (response.data?.token) {
+    await SecureStore.setItemAsync(JWT_TOKEN_KEY, response.data.token);
   }
+  
+  return response.data;
 };
 
 /**
  * Register new user
  */
-export const register = async (userData: RegisterRequest): Promise<{ success: boolean; data?: RegisterResponse; error?: string }> => {
-  try {
-    const response = await registerUser(userData);
-    
-    return { success: true, data: response.data };
-  } catch (error) {
-    return { 
-      success: false, 
-      error: isApiError(error) ? error.message : 'Registration failed' 
-    };
-  }
+export const register = async (userData: RegisterRequest): Promise<RegisterResponse> => {
+  const response = await registerUser(userData);
+  return response.data;
 };
 
 /**

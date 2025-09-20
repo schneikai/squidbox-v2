@@ -10,12 +10,12 @@ export type PlatformUser = Readonly<{
   displayName?: string;
 }>;
 
-const platformProviders = {
+const platformProviders: Record<Platform, any> = {
   twitter,
   bluesky,
   onlyfans,
   jff,
-} as const;
+};
 
 
 /**

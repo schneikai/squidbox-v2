@@ -129,12 +129,7 @@ export const handleCallback = async (
  * Check if user is connected (uses platform auth storage)
  */
 export const isConnected = async (): Promise<boolean> => {
-  try {
-    return !!(await getAccessToken());
-  } catch (error) {
-    console.error('Error checking isConnected:', error);
-    return false;
-  }
+  return !!(await getAccessToken());
 };
 
 /**
@@ -173,6 +168,8 @@ export const refreshAuthStatus = async (): Promise<void> => {
     } else {
       console.log('Non-unauthorized error, keeping cached data');
     }
+    // Re-throw the error to let consumers handle it
+    throw error;
   }
 };
 

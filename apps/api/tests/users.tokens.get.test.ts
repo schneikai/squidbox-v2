@@ -1,7 +1,8 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Platform } from '@prisma/client';
+import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { createApi } from '../src/api';
 import { signJwt } from '../src/auth';
 
@@ -41,7 +42,7 @@ describe('Users Routes - GET /tokens/:platform', () => {
     await prisma.oAuthToken.create({
       data: {
         userId: testUser.id,
-        platform: tokenData.platform,
+        platform: tokenData.platform as Platform,
         accessToken: tokenData.accessToken,
         refreshToken: tokenData.refreshToken,
         expiresIn: tokenData.expiresIn,
@@ -111,13 +112,13 @@ describe('Users Routes - GET /tokens/:platform', () => {
 
   it('should work for different platforms', async () => {
     // Store tokens for different platforms
-    const platforms = ['twitter', 'bluesky', 'onlyfans', 'jff'];
+    const platforms = SUPPORTED_PLATFORMS.map(p => p.id);
     
     for (const platform of platforms) {
       await prisma.oAuthToken.create({
         data: {
           userId: testUser.id,
-          platform,
+          platform: platform,
           accessToken: `${platform}_access_token`,
           refreshToken: `${platform}_refresh_token`,
           expiresIn: 3600,

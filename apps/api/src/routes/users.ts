@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { OAuthTokensCreate } from '@squidbox/contracts';
+import { OAuthTokensCreate, SUPPORTED_PLATFORMS } from '@squidbox/contracts';
+import { Platform } from '@prisma/client';
 
 import { authenticateToken, AuthenticatedRequest } from '../auth';
 import { logger } from '../logger';
@@ -43,58 +44,53 @@ router.post('/tokens', authenticateToken, async (req: AuthenticatedRequest, res)
     expiresIn 
   }, 'Processing token storage');
 
-  try {
-    // Calculate expiration date
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+  // Calculate expiration date
+  const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
-    logger.info({ 
-      userId: req.user!.id, 
-      platform, 
-      expiresAt 
-    }, 'Storing tokens in database');
+  logger.info({ 
+    userId: req.user!.id, 
+    platform, 
+    expiresAt 
+  }, 'Storing tokens in database');
 
-    // Upsert OAuth tokens (update if exists, create if not)
-    const result = await prisma.oAuthToken.upsert({
-      where: {
-        userId_platform: {
-          userId: req.user!.id,
-          platform,
-        },
-      },
-      update: {
-        accessToken,
-        refreshToken,
-        expiresIn,
-        expiresAt,
-        username,
-        platformUserId,
-      },
-      create: {
+  // Upsert OAuth tokens (update if exists, create if not)
+  const result = await prisma.oAuthToken.upsert({
+    where: {
+      userId_platform: {
         userId: req.user!.id,
         platform,
-        accessToken,
-        refreshToken,
-        expiresIn,
-        expiresAt,
-        username,
-        platformUserId,
       },
-    });
+    },
+    update: {
+      accessToken,
+      refreshToken,
+      expiresIn,
+      expiresAt,
+      username,
+      platformUserId,
+    },
+    create: {
+      userId: req.user!.id,
+      platform,
+      accessToken,
+      refreshToken,
+      expiresIn,
+      expiresAt,
+      username,
+      platformUserId,
+    },
+  });
 
-    logger.info({ 
-      userId: req.user!.id, 
-      platform, 
-      tokenId: result.id 
-    }, 'Tokens stored successfully in database');
+  logger.info({ 
+    userId: req.user!.id, 
+    platform, 
+    tokenId: result.id 
+  }, 'Tokens stored successfully in database');
 
-    res.json({
-      success: true,
-      message: 'Tokens stored successfully',
-    });
-  } catch (error) {
-    logger.error({ err: error, userId: req.user!.id, platform }, 'Failed to store OAuth tokens');
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  res.json({
+    success: true,
+    message: 'Tokens stored successfully',
+  });
 });
 
 // Get OAuth tokens for a specific platform
@@ -106,35 +102,36 @@ router.get('/tokens/:platform', authenticateToken, async (req: AuthenticatedRequ
     return res.status(400).json({ error: 'Platform parameter is required' });
   }
 
-  try {
-    const token = await prisma.oAuthToken.findUnique({
-      where: {
-        userId_platform: {
-          userId: req.user!.id,
-          platform,
-        },
-      },
-    });
-
-    if (!token) {
-      return res.json({ success: true, data: null });
-    }
-
-    res.json({
-      success: true,
-      data: {
-        platform: token.platform,
-        accessToken: token.accessToken,
-        refreshToken: token.refreshToken,
-        expiresIn: token.expiresIn,
-        username: token.username,
-        userId: token.platformUserId,
-      },
-    });
-  } catch (error) {
-    logger.error({ err: error }, 'Failed to retrieve OAuth tokens');
-    res.status(500).json({ error: 'Internal server error' });
+  // Validate platform parameter
+  const validPlatforms = SUPPORTED_PLATFORMS.map(p => p.id);
+  if (!validPlatforms.includes(platform as Platform)) {
+    return res.status(400).json({ error: 'Invalid platform parameter' });
   }
+
+  const token = await prisma.oAuthToken.findUnique({
+    where: {
+      userId_platform: {
+        userId: req.user!.id,
+        platform: platform as Platform,
+      },
+    },
+  });
+
+  if (!token) {
+    return res.json({ success: true, data: null });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      platform: token.platform,
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      expiresIn: token.expiresIn,
+      username: token.username,
+      userId: token.platformUserId,
+    },
+  });
 });
 
 export default router;

@@ -5,6 +5,7 @@ import nock from 'nock';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import { Platform } from '@prisma/client';
 
 const app = createApi();
 import { createTweet } from '@squidbox/twitter-api';
@@ -266,7 +267,7 @@ describe('POST /api/post', () => {
     const postData: CreatePostRequest = {
       postGroups: [
         {
-          platforms: ['twitter', 'bluesky'],
+          platforms: [Platform.twitter, Platform.bluesky],
           posts: [
             {
               text: 'Hello from Squidbox! 🐙',
