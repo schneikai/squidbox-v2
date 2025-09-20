@@ -13,14 +13,14 @@ export async function createPostMediaEntries(postId: string, mediaItems: Media[]
     if (!mediaItem) continue;
     
     // Create or find the media item
-            const media = await prisma.media.upsert({
-              where: { url: mediaItem.url },
-              update: {},
-              create: {
-                type: mediaItem.type,
-                url: mediaItem.url,
-              },
-            });
+    const media = await prisma.media.upsert({
+      where: { url: mediaItem.url },
+      update: {},
+      create: {
+        type: mediaItem.type,
+        url: mediaItem.url,
+      },
+    });
     
     // Create the post-media link
     const postMedia = await prisma.postMedia.create({

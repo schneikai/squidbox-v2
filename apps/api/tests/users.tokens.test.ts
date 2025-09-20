@@ -18,7 +18,7 @@ describe('Users Routes - POST /tokens', () => {
     refreshToken: 'refresh_token_123',
     expiresIn: 3600,
     username: 'testuser',
-    userId: 'platform_user_123',
+    platformUserId: 'platform_user_123',
   };
 
   beforeEach(async () => {
@@ -63,7 +63,7 @@ describe('Users Routes - POST /tokens', () => {
     expect(storedToken?.refreshToken).toBe(validTokenData.refreshToken);
     expect(storedToken?.expiresIn).toBe(validTokenData.expiresIn);
     expect(storedToken?.username).toBe(validTokenData.username);
-    expect(storedToken?.platformUserId).toBe(validTokenData.userId);
+    expect(storedToken?.platformUserId).toBe(validTokenData.platformUserId);
   });
 
   it('should update existing OAuth tokens when upserting', async () => {
@@ -235,7 +235,7 @@ describe('Users Routes - POST /tokens', () => {
   it('should return 400 for empty platform userId', async () => {
     const invalidData = {
       ...validTokenData,
-      userId: '',
+      platformUserId: '',
     };
 
     const res = await request(app)

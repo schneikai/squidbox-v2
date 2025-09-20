@@ -39,6 +39,9 @@ Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma
 <!-- Add rules for typing, defaults, null/undefined handling, generics -->
 
 - Let the database handle ID generation instead of manually creating IDs (use `@default(cuid())` in Prisma schema)
+- Use Prisma-generated types from `@prisma/client` for database operations instead of manual type definitions
+- Prefer throwing errors over returning error objects - let consumers handle errors
+- Remove unnecessary try/catch blocks - only use for cleanup operations
 
 ## React
 
@@ -55,6 +58,8 @@ Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma
 - Prefer normalized database structures over JSON storage for better querying and maintainability
 - Use CUIDs for distributed systems (better than UUIDs for sortable, collision-resistant IDs)
 - Create junction tables for many-to-many relationships instead of storing arrays in JSON
+- Use Prisma enums for type safety instead of string fields with manual validation
+- Reset database during development instead of creating migrations (`npx prisma db push --force-reset`)
 
 ## Testing
 

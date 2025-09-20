@@ -91,7 +91,7 @@ function PostComposer({
     const allowMultiple = !hasVideo && remainingImages > 1;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes: ['images', 'videos'],
       allowsMultipleSelection: allowMultiple,
       selectionLimit: allowMultiple ? remainingImages : 1,
       quality: 1,

@@ -1,4 +1,4 @@
-import type { CreateTweetRequest, TwitterPostResult } from './types';
+import type { CreateTweetRequest } from './types';
 
 /**
  * Create a tweet using OAuth 2.0 Bearer Token
@@ -6,7 +6,7 @@ import type { CreateTweetRequest, TwitterPostResult } from './types';
 export const createTweet = async (
   accessToken: string,
   request: CreateTweetRequest,
-): Promise<TwitterPostResult> => {
+): Promise<string> => {
   const tweetData: any = {
     text: request.text,
   };
@@ -39,33 +39,13 @@ export const createTweet = async (
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Twitter API error response:', errorText);
-
-    // Handle specific error types
-    if (response.status === 429) {
-      return {
-        success: false,
-        error: 'Too many requests. Please try again later.',
-        errorType: 'rate_limit' as const,
-      };
-    } else if (response.status === 401) {
-      return {
-        success: false,
-        error: 'Authentication failed. Please sign in again.',
-        errorType: 'unauthorized' as const,
-      };
-    } else {
-      return {
-        success: false,
-        error: `Twitter API error: ${response.status} - ${errorText}`,
-        errorType: 'other' as const,
-      };
-    }
+    throw new Error(`Twitter API error: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json() as { data: { id: string } };
   console.log('Twitter API success response:', data);
 
-  return { success: true, tweetId: data.data.id };
+  return data.data.id;
 };
 
 /**
@@ -74,7 +54,7 @@ export const createTweet = async (
 export const deleteTweet = async (
   accessToken: string,
   tweetId: string,
-): Promise<TwitterPostResult> => {
+): Promise<boolean> => {
   const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}`, {
     method: 'DELETE',
     headers: {
@@ -85,28 +65,9 @@ export const deleteTweet = async (
   if (!response.ok) {
     const errorText = await response.text();
     console.error('Twitter API error response:', errorText);
-
-    if (response.status === 429) {
-      return {
-        success: false,
-        error: 'Too many requests. Please try again later.',
-        errorType: 'rate_limit' as const,
-      };
-    } else if (response.status === 401) {
-      return {
-        success: false,
-        error: 'Authentication failed. Please sign in again.',
-        errorType: 'unauthorized' as const,
-      };
-    } else {
-      return {
-        success: false,
-        error: `Twitter API error: ${response.status} - ${errorText}`,
-        errorType: 'other' as const,
-      };
-    }
+    throw new Error(`Twitter API error: ${response.status} - ${errorText}`);
   }
 
   const data = await response.json() as { data: { deleted: boolean } };
-  return { success: data.data.deleted };
+  return data.data.deleted;
 };

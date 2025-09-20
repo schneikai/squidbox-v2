@@ -40,7 +40,7 @@ export const initializeAuth = async (): Promise<AuthSession.AuthRequest> => {
 
   const request = new AuthSession.AuthRequest({
     clientId: TWITTER_CLIENT_ID,
-    scopes: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
+    scopes: ['tweet.read', 'tweet.write', 'users.read', 'offline.access', 'media.write'],
     redirectUri,
     responseType: AuthSession.ResponseType.Code,
     codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
@@ -56,6 +56,8 @@ export const initializeAuth = async (): Promise<AuthSession.AuthRequest> => {
     await SecureStore.setItemAsync(CODE_VERIFIER_KEY, request.codeVerifier);
     console.log('Stored code verifier:', request.codeVerifier);
   }
+
+  console.log('Request:', request);
 
   return request;
 };

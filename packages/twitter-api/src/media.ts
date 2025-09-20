@@ -1,69 +1,154 @@
-import type { MediaUploadResult, UploadMediaRequest } from './types';
+import type { UploadMediaRequest } from './types';
+
+const MEDIA_UPLOAD_BASE = 'https://api.twitter.com/2/media/upload';
+const DEFAULT_CHUNK_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 
 /**
- * Upload media to Twitter
+ * Upload media (image or video) to X via v2 chunked endpoint.
+ * Uses initialize/append/finalize flow, polling STATUS if processing is async.
  */
-export const uploadMediaToTwitter = async (
+export const uploadMedia = async (
   accessToken: string,
   request: UploadMediaRequest,
-): Promise<MediaUploadResult> => {
-  // Convert Buffer to Blob if needed
-  let fileToUpload: File | Blob;
-  if (Buffer.isBuffer(request.file)) {
-    fileToUpload = new Blob([new Uint8Array(request.file)], { type: request.mediaType });
-  } else {
-    fileToUpload = request.file;
+): Promise<string> => {
+  const { mediaType } = request;
+  const mediaCategory = inferMediaCategory(mediaType);
+
+  // Normalize to Uint8Array for chunking
+  const bytes = await normalizeToBytes(request.file);
+  const totalBytes = bytes.byteLength;
+
+  // INITIALIZE
+  const initPayload = {
+    media_type: mediaType,
+    total_bytes: totalBytes,
+    media_category: mediaCategory,
+  };
+
+  const initResp = await fetch(`${MEDIA_UPLOAD_BASE}/initialize`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(initPayload),
+  });
+  if (!initResp.ok) {
+    const errText = await initResp.text();
+    throw new Error(`INITIALIZE failed: ${initResp.status} - ${errText}`);
+  }
+  const initData = await initResp.json() as { data: { id: string } };
+  const mediaId = initData?.data?.id;
+  if (!mediaId) {
+    throw new Error('INITIALIZE succeeded but no media id returned');
   }
 
-  // First, initialize the upload
-  const formData = new FormData();
-  formData.append('media', fileToUpload);
-  formData.append('media_category', request.mediaType.startsWith('video/') ? 'tweet_video' : 'tweet_image');
+  // APPEND - chunked upload (images can be single-chunk)
+  const chunkSize = DEFAULT_CHUNK_SIZE_BYTES;
+  let segmentIndex = 0;
+  for (let offset = 0; offset < totalBytes; offset += chunkSize) {
+    const end = Math.min(offset + chunkSize, totalBytes);
+    const chunk = bytes.subarray(offset, end);
+    const appendForm = new FormData();
+    appendForm.append('segment_index', String(segmentIndex));
+    // Ensure BlobPart is a plain ArrayBuffer to satisfy DOM typings
+    const ab = copyToArrayBuffer(chunk);
+    appendForm.append('media', new Blob([ab], { type: mediaType }));
 
-  const response = await fetch('https://upload.twitter.com/1.1/media/upload.json', {
+    const appendResp = await fetch(`${MEDIA_UPLOAD_BASE}/${mediaId}/append`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: appendForm,
+    });
+    if (!appendResp.ok) {
+      const errText = await appendResp.text();
+      throw new Error(`APPEND failed (segment ${segmentIndex}): ${appendResp.status} - ${errText}`);
+    }
+    segmentIndex++;
+  }
+
+  // FINALIZE
+  const finalizeResp = await fetch(`${MEDIA_UPLOAD_BASE}/${mediaId}/finalize`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    body: formData,
   });
+  if (!finalizeResp.ok) {
+    const errText = await finalizeResp.text();
+    throw new Error(`FINALIZE failed: ${finalizeResp.status} - ${errText}`);
+  }
+  const finalizeData = await finalizeResp.json() as { data: { processing_info?: { state: string; check_after_secs?: number } } };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Twitter media upload error:', errorText);
-    throw new Error(`Media upload failed: ${response.status} - ${errorText}`);
+  // If processing_info present, poll STATUS until succeeded/failed
+  if (finalizeData?.data?.processing_info) {
+    await ensureMediaProcessingSucceeded(accessToken, mediaId);
   }
 
-  const data = await response.json() as { media_id_string: string };
-  return {
-    success: true,
-    mediaId: data.media_id_string,
-  };
+  return mediaId;
 };
 
-/**
- * Upload image to Twitter (convenience function)
- */
-export const uploadImageToTwitter = async (
-  accessToken: string,
-  imageFile: File | Blob | Buffer,
-  mediaType: 'image/jpeg' | 'image/png' | 'image/gif' = 'image/jpeg',
-): Promise<MediaUploadResult> => {
-  return uploadMediaToTwitter(accessToken, {
-    file: imageFile,
-    mediaType,
-  });
-};
+function inferMediaCategory(mediaType: UploadMediaRequest['mediaType']): 'tweet_image' | 'tweet_gif' | 'tweet_video' {
+  switch (mediaType) {
+    case 'video/mp4':
+      return 'tweet_video';
+    case 'image/gif':
+      return 'tweet_gif';
+    case 'image/jpeg':
+    case 'image/png':
+      return 'tweet_image';
+    default:
+      // Fail fast for unsupported/unknown media types
+      throw new Error(`Unsupported media type for X upload: ${mediaType}`);
+  }
+}
 
-/**
- * Upload video to Twitter (convenience function)
- */
-export const uploadVideoToTwitter = async (
+async function normalizeToBytes(file: File | Blob | Buffer): Promise<Uint8Array> {
+  if (Buffer.isBuffer(file)) {
+    return new Uint8Array(file);
+  }
+  const blob = file as Blob;
+  const ab = await blob.arrayBuffer();
+  return new Uint8Array(ab);
+}
+
+async function ensureMediaProcessingSucceeded(
   accessToken: string,
-  videoFile: File | Blob | Buffer,
-): Promise<MediaUploadResult> => {
-  return uploadMediaToTwitter(accessToken, {
-    file: videoFile,
-    mediaType: 'video/mp4',
-  });
-};
+  mediaId: string,
+  maxAttempts: number = 30,
+): Promise<void> {
+  let attempts = 0;
+  let nextDelayMs = 1000; // default 1s
+  while (attempts < maxAttempts) {
+    const url = `${MEDIA_UPLOAD_BASE}/${mediaId}`;
+    const statusResp = await fetch(url, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!statusResp.ok) {
+      const errText = await statusResp.text();
+      throw new Error(`STATUS failed: ${statusResp.status} - ${errText}`);
+    }
+    const statusData = await statusResp.json() as { data: { processing_info?: { state: string; check_after_secs?: number } } };
+    const proc = statusData?.data?.processing_info;
+    if (!proc || proc.state === 'succeeded') return;
+    if (proc.state === 'failed') throw new Error('Media processing failed');
+    nextDelayMs = (proc.check_after_secs ?? 1) * 1000;
+    await delay(nextDelayMs);
+    attempts++;
+  }
+  throw new Error('Timed out waiting for media processing');
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function copyToArrayBuffer(view: Uint8Array): ArrayBuffer {
+  const out = new ArrayBuffer(view.byteLength);
+  const dest = new Uint8Array(out);
+  dest.set(view);
+  return out;
+}

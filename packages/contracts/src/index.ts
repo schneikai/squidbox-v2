@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-// ============================================================================
-// CORE TYPES
-// ============================================================================
-
 export const Platform = z.enum(['twitter', 'bluesky', 'onlyfans', 'jff']);
 export type Platform = z.infer<typeof Platform>;
 
@@ -20,10 +16,7 @@ export const Post = z.object({
 });
 export type Post = z.infer<typeof Post>;
 
-// ============================================================================
-// COMPOSED TYPES
-// ============================================================================
-
+// The post on a specific platform
 export const PlatformPost = z.object({
   platform: Platform,
   post: Post,
@@ -31,6 +24,8 @@ export const PlatformPost = z.object({
 });
 export type PlatformPost = z.infer<typeof PlatformPost>;
 
+// A group of posts on different platforms
+// This is the type the PlatformComposer uses
 export const PostGroup = z.object({
   platforms: z.array(Platform),
   posts: z.array(Post),

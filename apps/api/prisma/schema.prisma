@@ -8,6 +8,32 @@ datasource db {
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
+enum MediaType {
+  image
+  video
+}
+
+enum Platform {
+  twitter
+  bluesky
+  onlyfans
+  jff
+}
+
+enum PostStatus {
+  pending
+  success
+  partial
+  failed
+}
+
+enum MediaDownloadStatus {
+  pending
+  downloading
+  success
+  failed
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -21,7 +47,7 @@ model User {
 model OAuthToken {
   id           String   @id @default(cuid())
   userId       String
-  platform     String   // "twitter", "bluesky", "onlyfans", "jff"
+  platform     Platform
   accessToken  String
   refreshToken String?
   expiresIn    Int
@@ -39,9 +65,9 @@ model OAuthToken {
 model Post {
   id               String   @id @default(cuid())
   userId           String
-  platform         String   // "twitter", "bluesky", "onlyfans", "jff"
+  platform         Platform
   text             String
-  status           String   // "pending", "success", "partial", "failed"
+  status           PostStatus
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
@@ -52,7 +78,7 @@ model Post {
 
 model Media {
   id               String   @id @default(cuid())
-  type             String   // "image", "video"
+  type             MediaType
   url              String   @unique
   alt              String?
   localPath        String?  // Path to downloaded file
@@ -80,7 +106,7 @@ model PostMedia {
 model MediaDownloadResult {
   id               String   @id @default(cuid())
   mediaId          String   @unique
-  status           String   // "pending", "downloading", "success", "failed"
+  status           MediaDownloadStatus
   localPath        String?  // Path to downloaded file
   error            String?  // Error message if download failed
   downloadedAt     DateTime?
@@ -93,7 +119,7 @@ model MediaDownloadResult {
 model PostingResult {
   id               String   @id @default(cuid())
   postId           String
-  platform         String   // "twitter", "bluesky", "onlyfans", "jff"
+  platform         Platform
   success          Boolean
   platformPostId   String?  // ID returned by the platform
   error            String?  // Error message if failed

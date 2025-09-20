@@ -13,6 +13,7 @@ import { CreatePostRequest } from '@squidbox/contracts';
 // Mock the Twitter API
 vi.mock('@squidbox/twitter-api', () => ({
   createTweet: vi.fn(),
+  uploadMedia: vi.fn().mockResolvedValue('mock-media-id'),
 }));
 
 const mockCreateTweet = vi.mocked(createTweet);
@@ -81,10 +82,7 @@ describe('POST /api/post', () => {
   });
 
   it('should create a post successfully', async () => {
-    mockCreateTweet.mockResolvedValue({
-      success: true,
-      tweetId: '1234567890123456789',
-    });
+    mockCreateTweet.mockResolvedValue('1234567890123456789');
 
     const postData: CreatePostRequest = {
       postGroups: [
@@ -128,10 +126,7 @@ describe('POST /api/post', () => {
   });
 
   it('should create a post with media successfully', async () => {
-    mockCreateTweet.mockResolvedValue({
-      success: true,
-      tweetId: '1234567890123456789',
-    });
+    mockCreateTweet.mockResolvedValue('1234567890123456789');
 
     const postData: CreatePostRequest = {
       postGroups: [
@@ -172,10 +167,7 @@ describe('POST /api/post', () => {
   });
 
   it('should handle video media', async () => {
-    mockCreateTweet.mockResolvedValue({
-      success: true,
-      tweetId: '1234567890123456789',
-    });
+    mockCreateTweet.mockResolvedValue('1234567890123456789');
 
     const postData: CreatePostRequest = {
       postGroups: [
@@ -216,10 +208,7 @@ describe('POST /api/post', () => {
   });
 
   it('should handle multiple media items', async () => {
-    mockCreateTweet.mockResolvedValue({
-      success: true,
-      tweetId: '1234567890123456789',
-    });
+    mockCreateTweet.mockResolvedValue('1234567890123456789');
 
     const postData: CreatePostRequest = {
       postGroups: [
@@ -272,10 +261,7 @@ describe('POST /api/post', () => {
   });
 
   it('should handle multiple platforms', async () => {
-    mockCreateTweet.mockResolvedValue({
-      success: true,
-      tweetId: '1234567890123456789',
-    });
+    mockCreateTweet.mockResolvedValue('1234567890123456789');
 
     const postData: CreatePostRequest = {
       postGroups: [
