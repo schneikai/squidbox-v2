@@ -41,6 +41,7 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   oauthTokens  OAuthToken[]
+  platformCredentials PlatformCredentials[]
   posts        Post[]
 }
 
@@ -54,6 +55,21 @@ model OAuthToken {
   expiresAt    DateTime?
   username     String
   platformUserId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, platform])
+}
+
+model PlatformCredentials {
+  id           String   @id @default(cuid())
+  userId       String
+  platform     Platform
+  username     String
+  password     String   // Encrypted password
+  totpSecret   String?  // Optional TOTP secret for 2FA
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   

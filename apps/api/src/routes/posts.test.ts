@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
-import { createApi } from '../src/api';
+import { createApi } from '../api';
 import nock from 'nock';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -56,7 +56,7 @@ describe('POST /api/post', () => {
     authToken = userResponse.body.token;
     
     // Create Twitter OAuth tokens for the test user
-    const { prisma } = await import('../src/prisma.js');
+    const { prisma } = await import('../prisma');
     await prisma.oAuthToken.create({
       data: {
         userId: userResponse.body.user.id,

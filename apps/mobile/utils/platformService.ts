@@ -1,5 +1,5 @@
 import { type Platform } from '@squidbox/contracts';
-import { getPlatformStatus, disconnectPlatform } from '../services/backend';
+import { getPlatformStatus, disconnectPlatform, deletePlatformCredentials } from '../services/backend';
 
 export type PlatformUser = Readonly<{
   id: string;
@@ -119,20 +119,34 @@ export async function refreshAuthStatus(platform: Platform): Promise<void> {
 }
 
 /**
- * Disconnect a platform by deleting its tokens from the backend
+ * Disconnect a platform by deleting its tokens and/or credentials from the backend
  */
 export async function disconnectPlatformTokens(platform: Platform): Promise<void> {
   try {
     console.log(`PlatformService.disconnectPlatformTokens: Disconnecting ${platform}`);
-    const response = await disconnectPlatform(platform);
     
-    if (response.data?.success) {
-      console.log(`PlatformService.disconnectPlatformTokens: Successfully disconnected ${platform}`);
-      // Clear the cache to force refresh on next check
-      clearPlatformStatusCache();
-    } else {
-      throw new Error(`Failed to disconnect ${platform}: ${response.data?.message || 'Unknown error'}`);
+    // Try to disconnect OAuth tokens first
+    try {
+      const tokenResponse = await disconnectPlatform(platform);
+      if (tokenResponse.data?.success) {
+        console.log(`PlatformService.disconnectPlatformTokens: Successfully disconnected OAuth tokens for ${platform}`);
+      }
+    } catch (tokenError) {
+      console.log(`PlatformService.disconnectPlatformTokens: No OAuth tokens to disconnect for ${platform}`);
     }
+    
+    // Try to disconnect platform credentials
+    try {
+      const credentialsResponse = await deletePlatformCredentials(platform);
+      if (credentialsResponse.data?.success) {
+        console.log(`PlatformService.disconnectPlatformTokens: Successfully disconnected credentials for ${platform}`);
+      }
+    } catch (credentialsError) {
+      console.log(`PlatformService.disconnectPlatformTokens: No credentials to disconnect for ${platform}`);
+    }
+    
+    // Clear the cache to force refresh on next check
+    clearPlatformStatusCache();
   } catch (error) {
     console.error(`PlatformService.disconnectPlatformTokens: Error disconnecting ${platform}:`, error);
     throw error;

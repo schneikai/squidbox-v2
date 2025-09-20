@@ -1,3 +1,5 @@
+import * as SecureStore from 'expo-secure-store';
+
 type OnlyFansUser = Readonly<{
   id: string;
   username: string;

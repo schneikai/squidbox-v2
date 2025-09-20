@@ -2,8 +2,8 @@ import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { PrismaClient } from '@prisma/client';
-import { createApi } from '../src/api';
-import { signJwt } from '../src/auth';
+import { createApi } from '../api';
+import { signJwt } from '../auth';
 
 const prisma = new PrismaClient();
 

@@ -1,5 +1,7 @@
 import type { 
   OAuthTokensCreate, 
+  PlatformCredentialsCreate,
+  PlatformCredentialsResponse,
   CreatePostRequest, 
   CreatePostResponse
 } from '@squidbox/contracts';
@@ -73,7 +75,7 @@ export const storePlatformAuthTokens = async (
   tokens: AuthTokensRequest,
 ): Promise<ApiResponse<AuthTokensResponse>> => {
   console.log('storePlatformAuthTokens: Storing tokens for platform:', tokens.platform);
-  const url = getBackendUrl('/api/users/tokens');
+  const url = getBackendUrl('/api/platforms/tokens');
   const headers = await getAuthHeaders();
   console.log('storePlatformAuthTokens: Making request to:', url);
   console.log('storePlatformAuthTokens: Headers:', headers);
@@ -151,7 +153,7 @@ export const getPlatformStatus = async (): Promise<ApiResponse<{
     isConnected: boolean;
     username: string | null;
     expiresAt: string | null;
-  }[]>(getBackendUrl('/api/users/platforms/status'), headers);
+  }[]>(getBackendUrl('/api/platforms/status'), headers);
 };
 
 /**
@@ -165,7 +167,59 @@ export const disconnectPlatform = async (platform: string): Promise<ApiResponse<
   return httpDelete<{
     success: boolean;
     message: string;
-  }>(getBackendUrl(`/api/users/tokens/${platform}`), headers);
+  }>(getBackendUrl(`/api/platforms/tokens/${platform}`), headers);
+};
+
+// ============================================================================
+// PLATFORM CREDENTIALS FUNCTIONS
+// ============================================================================
+
+/**
+ * Store platform credentials for a platform (OnlyFans, etc.)
+ */
+export const storePlatformCredentials = async (
+  credentials: PlatformCredentialsCreate,
+): Promise<ApiResponse<{
+  success: boolean;
+  message: string;
+}>> => {
+  console.log('storePlatformCredentials: Storing credentials for platform:', credentials.platform);
+  const url = getBackendUrl('/api/platforms/credentials');
+  const headers = await getAuthHeaders();
+  console.log('storePlatformCredentials: Making request to:', url);
+  console.log('storePlatformCredentials: Headers:', headers);
+  console.log('storePlatformCredentials: Credentials data:', credentials);
+  return httpPost<{
+    success: boolean;
+    message: string;
+  }>(url, credentials, headers);
+};
+
+/**
+ * Get stored platform credentials for a platform
+ */
+export const getPlatformCredentials = async (
+  platform: string,
+): Promise<ApiResponse<PlatformCredentialsResponse | null>> => {
+  const headers = await getAuthHeaders();
+  return httpGet<PlatformCredentialsResponse | null>(
+    getBackendUrl(`/api/platforms/credentials/${platform}`),
+    headers,
+  );
+};
+
+/**
+ * Delete platform credentials for a platform
+ */
+export const deletePlatformCredentials = async (platform: string): Promise<ApiResponse<{
+  success: boolean;
+  message: string;
+}>> => {
+  const headers = await getAuthHeaders();
+  return httpDelete<{
+    success: boolean;
+    message: string;
+  }>(getBackendUrl(`/api/platforms/credentials/${platform}`), headers);
 };
 
 

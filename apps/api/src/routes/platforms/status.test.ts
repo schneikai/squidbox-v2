@@ -2,12 +2,12 @@ import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { PrismaClient, Platform } from '@prisma/client';
-import { createApi } from '../src/api';
-import { signJwt } from '../src/auth';
+import { createApi } from '../../api';
+import { signJwt } from '../../auth';
 
 const prisma = new PrismaClient();
 
-describe('Users Routes - GET /platforms/status', () => {
+describe('Platform Routes - GET /status', () => {
   let app: any;
   let testUser: any;
   let validToken: string;
@@ -29,7 +29,7 @@ describe('Users Routes - GET /platforms/status', () => {
 
   it('should return empty status for user with no connected platforms', async () => {
     const res = await request(app)
-      .get('/api/users/platforms/status')
+      .get('/api/platforms/status')
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
@@ -87,7 +87,7 @@ describe('Users Routes - GET /platforms/status', () => {
     });
 
     const res = await request(app)
-      .get('/api/users/platforms/status')
+      .get('/api/platforms/status')
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
@@ -151,7 +151,7 @@ describe('Users Routes - GET /platforms/status', () => {
     });
 
     const res = await request(app)
-      .get('/api/users/platforms/status')
+      .get('/api/platforms/status')
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
@@ -181,7 +181,7 @@ describe('Users Routes - GET /platforms/status', () => {
     });
 
     const res = await request(app)
-      .get('/api/users/platforms/status')
+      .get('/api/platforms/status')
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
@@ -197,7 +197,7 @@ describe('Users Routes - GET /platforms/status', () => {
 
   it('should require authentication', async () => {
     const res = await request(app)
-      .get('/api/users/platforms/status');
+      .get('/api/platforms/status');
 
     expect(res.status).toBe(401);
   });
@@ -238,7 +238,7 @@ describe('Users Routes - GET /platforms/status', () => {
     });
 
     const res = await request(app)
-      .get('/api/users/platforms/status')
+      .get('/api/platforms/status')
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);
@@ -258,7 +258,7 @@ describe('Users Routes - GET /platforms/status', () => {
     // This test would require mocking the database to simulate errors
     // For now, we'll just ensure the endpoint exists and returns proper structure
     const res = await request(app)
-      .get('/api/users/platforms/status')
+      .get('/api/platforms/status')
       .set('Authorization', `Bearer ${validToken}`);
 
     expect(res.status).toBe(200);

@@ -39,6 +39,20 @@ CREATE TABLE "public"."OAuthToken" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."PlatformCredentials" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "platform" "public"."Platform" NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "totpSecret" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PlatformCredentials_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."Post" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -109,6 +123,9 @@ CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 CREATE UNIQUE INDEX "OAuthToken_userId_platform_key" ON "public"."OAuthToken"("userId", "platform");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "PlatformCredentials_userId_platform_key" ON "public"."PlatformCredentials"("userId", "platform");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Media_url_key" ON "public"."Media"("url");
 
 -- CreateIndex
@@ -125,6 +142,9 @@ CREATE UNIQUE INDEX "PostingResult_postId_platform_key" ON "public"."PostingResu
 
 -- AddForeignKey
 ALTER TABLE "public"."OAuthToken" ADD CONSTRAINT "OAuthToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."PlatformCredentials" ADD CONSTRAINT "PlatformCredentials_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Post" ADD CONSTRAINT "Post_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

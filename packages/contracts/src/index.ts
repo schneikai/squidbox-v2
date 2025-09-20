@@ -138,3 +138,24 @@ export const OAuthTokensCreate = z.object({
   platformUserId: z.string().min(1, 'Platform user ID is required'),
 });
 export type OAuthTokensCreate = z.infer<typeof OAuthTokensCreate>;
+
+// ============================================================================
+// PLATFORM CREDENTIALS TYPES
+// ============================================================================
+
+export const PlatformCredentialsCreate = z.object({
+  platform: Platform,
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
+  totpSecret: z.string().optional(),
+});
+export type PlatformCredentialsCreate = z.infer<typeof PlatformCredentialsCreate>;
+
+export const PlatformCredentialsResponse = z.object({
+  platform: Platform,
+  username: z.string(),
+  hasTotp: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type PlatformCredentialsResponse = z.infer<typeof PlatformCredentialsResponse>;
