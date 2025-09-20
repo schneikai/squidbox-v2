@@ -28,8 +28,9 @@ export async function postToPlatform(
 
 /**
  * Check if user has valid authentication for a platform
+ * @deprecated This function is not used. Platform status is checked directly in routes.
  */
-export async function isConnected(userId: string, platform: Platform): Promise<boolean> {
+async function isConnected(userId: string, platform: Platform): Promise<boolean> {
   const provider = getProvider(platform);
   return await provider.isConnected(userId);
 }

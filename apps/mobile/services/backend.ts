@@ -43,7 +43,7 @@ type RegisterResponse = {
 };
 
 // Get backend base URL
-export const getBackendBaseUrl = (): string => {
+const getBackendBaseUrl = (): string => {
   const url = Constants.expoConfig?.extra?.backendUrl || process.env.EXPO_PUBLIC_BACKEND_URL || '';
   if (!url) {
     throw new Error(
@@ -60,7 +60,7 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
 };
 
 // Helper to construct full backend URLs
-export const getBackendUrl = (endpoint: string): string => {
+const getBackendUrl = (endpoint: string): string => {
   const baseUrl = getBackendBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   return `${baseUrl}${cleanEndpoint}`;

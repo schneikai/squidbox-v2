@@ -281,9 +281,6 @@ importers:
 
   packages/twitter-api:
     dependencies:
-      oauth-1.0a:
-        specifier: ^2.2.6
-        version: 2.2.6
       zod:
         specifier: ^4.1.5
         version: 4.1.8

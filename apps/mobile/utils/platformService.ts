@@ -7,7 +7,7 @@ export type PlatformUser = Readonly<{
   displayName?: string;
 }>;
 
-export type PlatformStatus = Readonly<{
+type PlatformStatus = Readonly<{
   platform: string;
   isConnected: boolean;
   username: string | null;
@@ -100,7 +100,7 @@ export async function getCachedUser(platform: Platform): Promise<PlatformUser | 
 /**
  * Clear platform status cache to force refresh from backend
  */
-export function clearPlatformStatusCache(): void {
+function clearPlatformStatusCache(): void {
   platformStatusCache = null;
   cacheTimestamp = 0;
 }

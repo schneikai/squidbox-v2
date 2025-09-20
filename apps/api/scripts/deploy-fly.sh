@@ -10,6 +10,9 @@ set -euo pipefail
 #   REDIS_APP=squidbox-redis API_APP=squidbox-api WORKER_APP=squidbox-worker \
 #   VOLUME_SIZE_GB=100 \
 #   bash scripts/deploy-fly.sh
+#   
+#   For database reset (DANGER - ALL DATA LOST):
+#   bash scripts/deploy-fly.sh --reset-db
 
 REDIS_APP=${REDIS_APP:-squidbox-redis}
 API_APP=${API_APP:-squidbox-api}
@@ -52,9 +55,26 @@ fi
 
 echo "[fly] Using region=$REGION"
 
-# Always run Prisma migrations against DATABASE_URL
-echo "[migrate] Running Prisma migrate deploy against $DATABASE_URL"
-npx npx prisma migrate deploy
+# Ask about database handling
+echo ""
+echo "🗄️  Database Migration Options:"
+echo "   [Enter] Migrate (default) - Apply schema changes safely"
+echo "   Type 'RESET' - WARNING: ALL DATA WILL BE LOST!"
+echo ""
+read -p "Choose option (default: migrate): " db_option
+
+# Handle database option
+if [[ "${db_option:-}" == "RESET" ]]; then
+  echo "[migrate] Resetting database"
+  npx prisma migrate reset --force
+else
+  echo "[migrate] Running Prisma migrate deploy against $DATABASE_URL"
+  npx prisma migrate deploy
+fi
+
+# Create test user in production database
+echo "[user] Creating test user in production database"
+tsx scripts/create-dev-user.ts
 
 echo "[redis] Creating app $REDIS_APP (if missing)"
 fly apps create "$REDIS_APP" || true

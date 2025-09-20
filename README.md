@@ -23,9 +23,8 @@ pnpm i
 ### Development
 
 ```bash
-# First-time setup: Initialize database and create dev user
-pnpm db:migrate init
-pnpm db:create-dev-user
+# First-time setup: Create database and create dev user
+pnpm db:create
 
 # Start all services
 pnpm dev
@@ -35,6 +34,34 @@ pnpm dev
 
 ```bash
 pnpm build
+```
+
+### Database
+
+Heads-up: The `pnpm db:reset` command was added while in active development without a need to
+maintain migrations. When you have deployed a production database and the data there is
+important, you must switch to the `pnpm db:migrate` command!
+
+The following commad are all for development database management. The production database is managed
+via the deploy script `pnpm deploy`.
+
+```bash
+# Create the development database with the default test user
+pnpm db:create
+
+# Drop and recreate the development database with the default test user
+# This is meant to be used in active development while you dont need to maintain migrations
+# This will overwrite all existig migrations with a single migration reflecting the current schema
+pnpm db:reset
+
+# Run a database migration
+# The workflow is the following:
+# 1. Make changes to the schema in prisma/schema.prisma
+# 2. Run pnpm db:migrate <migration_name>
+# Where <migration_name> is a descriptive name for the migration
+# Example: pnpm db:migrate add_users
+#          pnpm db:migrate add_username_to_users
+pnpm db:migrate
 ```
 
 ### Testing

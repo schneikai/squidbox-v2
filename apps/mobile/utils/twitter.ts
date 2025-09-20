@@ -114,43 +114,6 @@ export const handleCallback = async (
   };
 };
 
-/**
- * Check if user is connected (now handled by backend)
- * This method is kept for compatibility but should not be used directly
- */
-export const isConnected = async (): Promise<boolean> => {
-  console.warn('Twitter.isConnected: This method is deprecated. Use platformService.isConnected instead.');
-  return false;
-};
-
-/**
- * Get Twitter user from cache only (now handled by backend)
- * This method is kept for compatibility but should not be used directly
- */
-export const getCachedUser = async (): Promise<PlatformUser | null> => {
-  console.warn('Twitter.getCachedUser: This method is deprecated. Use platformService.getCachedUser instead.');
-  return null;
-};
-
-
-/**
- * Refresh authentication status (now handled by backend)
- * This method is kept for compatibility but should not be used directly
- */
-export const refreshAuthStatus = async (): Promise<void> => {
-  console.warn('Twitter.refreshAuthStatus: This method is deprecated. Use platformService.refreshAuthStatus instead.');
-};
-
-/**
- * Sign out (now handled by backend)
- * This method is kept for compatibility but should not be used directly
- */
-export const signOut = async (): Promise<void> => {
-  console.warn('Twitter.signOut: This method is deprecated. Sign out is now handled by the backend.');
-  
-  // Clear code verifier (still needed for OAuth flow)
-  await SecureStore.deleteItemAsync(CODE_VERIFIER_KEY);
-};
 
 
 // Helpers

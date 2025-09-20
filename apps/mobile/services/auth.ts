@@ -61,7 +61,7 @@ export const register = async (userData: RegisterRequest): Promise<RegisterRespo
 /**
  * Get stored JWT token
  */
-export const getStoredAuthToken = async (): Promise<string | null> => {
+const getStoredAuthToken = async (): Promise<string | null> => {
   return await SecureStore.getItemAsync(JWT_TOKEN_KEY);
 };
 
@@ -73,12 +73,6 @@ export const logout = async (): Promise<void> => {
   await SecureStore.deleteItemAsync(JWT_TOKEN_KEY);
 };
 
-/**
- * Check if user has local auth token stored (offline check)
- */
-export const hasLocalAuthToken = async (): Promise<boolean> => {
-  return !!(await getStoredAuthToken());
-};
 
 /**
  * Verify authentication by checking local token and then checking server by calling /users/me

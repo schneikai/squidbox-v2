@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "docker compose up -d db redis || true && tsx watch src/index.ts",
     "dev:down": "docker compose down -v --remove-orphans",
+
+    "db:create": "pnpm db:migrate init && tsx scripts/create-dev-user.ts",
+    "db:reset": "rm -rf prisma/migrations && npx prisma migrate reset --force && pnpm run db:create",
+    "db:migrate": "bash scripts/local-db-migrate.sh",
+    
+    "deploy": "bash scripts/deploy-fly.sh",
+
     "build": "tsc -p tsconfig.json",
     "start": "node --enable-source-maps dist/index.js",
     "types": "tsc --noEmit -p tsconfig.json",
-    "db:migrate": "bash scripts/local-db-migrate.sh",
-    "db:create-dev-user": "tsx scripts/create-dev-user.ts",
-    "deploy": "bash scripts/deploy-fly.sh",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky"
