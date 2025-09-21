@@ -91,12 +91,8 @@ export function usePlatformCard({ platform, isRefreshing = false }: UsePlatformC
         ],
       );
     } else {
-      // Handle authentication based on config
-      if (config.authUrl) {
-        router.push(config.authUrl as any);
-      } else {
-        Alert.alert('Coming Soon', 'Authentication will be available soon!');
-      }
+      // Handle authentication based on platform
+      router.push(`/auth/${platform}`);
     }
   }, [platform, config, getCurrentStatus]);
 

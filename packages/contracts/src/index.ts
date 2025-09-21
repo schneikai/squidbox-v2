@@ -13,7 +13,6 @@ export type PlatformConfig = Readonly<{
   maxMedia: number;
   supportsVideo: boolean;
   supportsMultiplePosts: boolean;
-  authUrl?: string;
 }>;
 
 export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
@@ -26,7 +25,6 @@ export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
     maxMedia: 4,
     supportsVideo: true,
     supportsMultiplePosts: true,
-    authUrl: '/auth/twitter',
   },
   bluesky: {
     id: 'bluesky',

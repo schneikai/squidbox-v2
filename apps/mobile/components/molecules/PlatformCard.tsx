@@ -8,7 +8,6 @@ interface PlatformConfig {
   name: string;
   icon: string;
   color: string;
-  authUrl?: string;
 }
 
 interface PlatformStatus {
