@@ -22,9 +22,11 @@ export async function createPostMediaEntries(postId: string, mediaItems: Media[]
       },
     });
     
-    // Create the post-media link
-    const postMedia = await prisma.postMedia.create({
-      data: {
+    // Create the post-media link (idempotent per postId+mediaId)
+    const postMedia = await prisma.postMedia.upsert({
+      where: { postId_mediaId: { postId, mediaId: media.id } },
+      update: {},
+      create: {
         postId,
         mediaId: media.id,
         order: i,

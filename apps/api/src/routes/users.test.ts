@@ -1,11 +1,8 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient } from '@prisma/client';
 import { createApi } from '../api';
-import { signJwt } from '../auth';
-
-const prisma = new PrismaClient();
+import { authenticateUser, createUser, authHeader } from '../../tests/utils';
 
 describe('Users Routes - GET /me', () => {
   let app: any;
@@ -15,22 +12,15 @@ describe('Users Routes - GET /me', () => {
   beforeEach(async () => {
     app = createApi();
 
-    // Create a test user (using same email as tokens test to verify global cleanup works)
-    testUser = await prisma.user.create({
-      data: {
-        email: 'shared-test@example.com',
-        passwordHash: 'hashedpassword',
-      },
-    });
-
-    // Generate a valid JWT token for the test user
-    validToken = signJwt({ userId: testUser.id });
+    testUser = await createUser({ email: 'shared-test@example.com' });
+    const auth = await authenticateUser(testUser);
+    validToken = auth.token;
   });
 
   it('should return user data with valid authorization', async () => {
     const res = await request(app)
       .get('/api/users/me')
-      .set('Authorization', `Bearer ${validToken}`);
+      .set(authHeader(validToken));
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -71,13 +61,13 @@ describe('Users Routes - GET /me', () => {
   });
 
   it('should return 401 when user does not exist', async () => {
-    // Create a token for a non-existent user
+    const { signJwt } = await import('../auth');
     const nonExistentUserId = 'non-existent-user-id';
     const tokenForNonExistentUser = signJwt({ userId: nonExistentUserId });
 
     const res = await request(app)
       .get('/api/users/me')
-      .set('Authorization', `Bearer ${tokenForNonExistentUser}`);
+      .set(authHeader(tokenForNonExistentUser));
 
     expect(res.status).toBe(401);
     expect(res.body).toMatchObject({

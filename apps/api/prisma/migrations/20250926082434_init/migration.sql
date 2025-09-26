@@ -5,10 +5,10 @@ CREATE TYPE "public"."MediaType" AS ENUM ('image', 'video');
 CREATE TYPE "public"."Platform" AS ENUM ('twitter', 'bluesky', 'onlyfans', 'jff');
 
 -- CreateEnum
-CREATE TYPE "public"."PostStatus" AS ENUM ('pending', 'success', 'partial', 'failed');
+CREATE TYPE "public"."PostStatus" AS ENUM ('pending', 'success', 'failed');
 
 -- CreateEnum
-CREATE TYPE "public"."MediaDownloadStatus" AS ENUM ('pending', 'downloading', 'success', 'failed');
+CREATE TYPE "public"."JobStatus" AS ENUM ('pending', 'working', 'success', 'failed');
 
 -- CreateTable
 CREATE TABLE "public"."User" (
@@ -59,6 +59,7 @@ CREATE TABLE "public"."Post" (
     "platform" "public"."Platform" NOT NULL,
     "text" TEXT NOT NULL,
     "status" "public"."PostStatus" NOT NULL,
+    "groupId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -92,10 +93,9 @@ CREATE TABLE "public"."PostMedia" (
 CREATE TABLE "public"."MediaDownloadResult" (
     "id" TEXT NOT NULL,
     "mediaId" TEXT NOT NULL,
-    "status" "public"."MediaDownloadStatus" NOT NULL,
-    "localPath" TEXT,
-    "error" TEXT,
-    "downloadedAt" TIMESTAMP(3),
+    "status" "public"."JobStatus" NOT NULL,
+    "statusText" TEXT,
+    "jobId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -103,17 +103,17 @@ CREATE TABLE "public"."MediaDownloadResult" (
 );
 
 -- CreateTable
-CREATE TABLE "public"."PostingResult" (
+CREATE TABLE "public"."PostResult" (
     "id" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
-    "platform" "public"."Platform" NOT NULL,
-    "success" BOOLEAN NOT NULL,
+    "status" "public"."JobStatus" NOT NULL,
+    "statusText" TEXT,
     "platformPostId" TEXT,
-    "error" TEXT,
+    "jobId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "PostingResult_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PostResult_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -138,7 +138,7 @@ CREATE UNIQUE INDEX "PostMedia_postId_order_key" ON "public"."PostMedia"("postId
 CREATE UNIQUE INDEX "MediaDownloadResult_mediaId_key" ON "public"."MediaDownloadResult"("mediaId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PostingResult_postId_platform_key" ON "public"."PostingResult"("postId", "platform");
+CREATE UNIQUE INDEX "PostResult_postId_key" ON "public"."PostResult"("postId");
 
 -- AddForeignKey
 ALTER TABLE "public"."OAuthToken" ADD CONSTRAINT "OAuthToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -159,4 +159,4 @@ ALTER TABLE "public"."PostMedia" ADD CONSTRAINT "PostMedia_mediaId_fkey" FOREIGN
 ALTER TABLE "public"."MediaDownloadResult" ADD CONSTRAINT "MediaDownloadResult_mediaId_fkey" FOREIGN KEY ("mediaId") REFERENCES "public"."Media"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."PostingResult" ADD CONSTRAINT "PostingResult_postId_fkey" FOREIGN KEY ("postId") REFERENCES "public"."Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."PostResult" ADD CONSTRAINT "PostResult_postId_fkey" FOREIGN KEY ("postId") REFERENCES "public"."Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;

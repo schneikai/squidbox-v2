@@ -6,28 +6,30 @@ import { downloadMediaFile } from './downloadMediaFile';
  * Helper function to download media and update database
  */
 export async function downloadMedia(mediaId: string, url: string): Promise<string | null> {
-  try {
-    const existingMedia = await prisma.media.findUnique({
-      where: { id: mediaId },
-      include: { downloadResult: true },
-    });
-    
-    if (existingMedia?.localPath) {
-      return existingMedia.localPath;
-    }
-    
+  const existingMedia = await prisma.media.findUnique({
+    where: { id: mediaId },
+    include: { downloadResult: true },
+  });
+  
+  if (existingMedia?.localPath) {
+    return existingMedia.localPath;
+  }
+  
     const downloadResult = await prisma.mediaDownloadResult.upsert({
       where: { mediaId },
       update: {
-        status: 'downloading',
+        status: 'working',
+        statusText: 'Downloading...',
         updatedAt: new Date(),
       },
       create: {
         mediaId,
-        status: 'downloading',
+        status: 'working',
+        statusText: 'Downloading...',
       },
     });
-    
+
+  try {
     const localPath = await downloadMediaFile(url, mediaId);
     
     await prisma.media.update({
@@ -41,8 +43,7 @@ export async function downloadMedia(mediaId: string, url: string): Promise<strin
       where: { id: downloadResult.id },
       data: {
         status: 'success',
-        localPath,
-        downloadedAt: new Date(),
+        statusText: 'Download completed',
         updatedAt: new Date(),
       },
     });
@@ -57,16 +58,16 @@ export async function downloadMedia(mediaId: string, url: string): Promise<strin
       where: { mediaId },
       update: {
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        statusText: error instanceof Error ? error.message : 'Unknown error',
         updatedAt: new Date(),
       },
       create: {
         mediaId,
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        statusText: error instanceof Error ? error.message : 'Unknown error',
       },
     });
     
-    return null;
+    throw error;
   }
 }

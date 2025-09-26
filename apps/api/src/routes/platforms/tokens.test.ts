@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { PrismaClient, Platform } from '@prisma/client';
 import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { createApi } from '../../api';
-import { signJwt } from '../../auth';
+import { authenticateUser, createUser, authHeader } from '../../../tests/utils';
 
 const prisma = new PrismaClient();
 
@@ -17,15 +17,11 @@ describe('Platform Routes - Tokens', () => {
     app = createApi();
 
     // Create a test user
-    testUser = await prisma.user.create({
-      data: {
-        email: 'test-tokens@example.com',
-        passwordHash: 'hashedpassword',
-      },
-    });
+    testUser = await createUser();
 
     // Generate a valid JWT token for the test user
-    validToken = signJwt({ userId: testUser.id });
+    const auth = await authenticateUser(testUser);
+    validToken = auth.token;
   });
 
   describe('GET /tokens/:platform', () => {
@@ -56,7 +52,7 @@ describe('Platform Routes - Tokens', () => {
       // Now retrieve the tokens
       const res = await request(app)
         .get('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
@@ -75,7 +71,7 @@ describe('Platform Routes - Tokens', () => {
     it('should return null when no tokens exist for platform', async () => {
       const res = await request(app)
         .get('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
@@ -101,11 +97,12 @@ describe('Platform Routes - Tokens', () => {
     });
 
     it('should return 401 when user does not exist', async () => {
+      const { signJwt } = await import('../../auth');
       const invalidToken = signJwt({ userId: 'non-existent-user-id' });
       
       const res = await request(app)
         .get('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${invalidToken}`);
+        .set(authHeader(invalidToken));
 
       expect(res.status).toBe(401);
       expect(res.body).toHaveProperty('error', 'User not found');
@@ -134,7 +131,7 @@ describe('Platform Routes - Tokens', () => {
       for (const platform of platforms) {
         const res = await request(app)
           .get(`/api/platforms/tokens/${platform}`)
-          .set('Authorization', `Bearer ${validToken}`);
+          .set(authHeader(validToken));
 
         expect(res.status).toBe(200);
         expect(res.body).toMatchObject({
@@ -167,7 +164,7 @@ describe('Platform Routes - Tokens', () => {
       // Store tokens first
       await request(app)
         .post('/api/platforms/tokens')
-        .set('Authorization', `Bearer ${validToken}`)
+        .set(authHeader(validToken))
         .send(tokenData);
 
       // Verify tokens exist
@@ -179,7 +176,7 @@ describe('Platform Routes - Tokens', () => {
       // Delete the tokens
       const res = await request(app)
         .delete('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
@@ -197,7 +194,7 @@ describe('Platform Routes - Tokens', () => {
     it('should return 404 when trying to delete non-existent tokens', async () => {
       const res = await request(app)
         .delete('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(404);
       expect(res.body).toMatchObject({
@@ -208,7 +205,7 @@ describe('Platform Routes - Tokens', () => {
     it('should return 400 for invalid platform parameter', async () => {
       const res = await request(app)
         .delete('/api/platforms/tokens/invalid_platform')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(400);
       expect(res.body).toMatchObject({
@@ -219,7 +216,7 @@ describe('Platform Routes - Tokens', () => {
     it('should return 400 when platform parameter is missing', async () => {
       const res = await request(app)
         .delete('/api/platforms/tokens/')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(404); // Express returns 404 for missing route parameter
     });
@@ -262,7 +259,7 @@ describe('Platform Routes - Tokens', () => {
       // Delete tokens for the test user
       const res = await request(app)
         .delete('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(200);
 
@@ -315,7 +312,7 @@ describe('Platform Routes - Tokens', () => {
       // Delete only Twitter tokens
       const res = await request(app)
         .delete('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(200);
 
@@ -353,7 +350,7 @@ describe('Platform Routes - Tokens', () => {
         // Delete tokens for this platform
         const res = await request(app)
           .delete(`/api/platforms/tokens/${platform}`)
-          .set('Authorization', `Bearer ${validToken}`);
+          .set(authHeader(validToken));
 
         expect(res.status).toBe(200);
         expect(res.body).toMatchObject({
@@ -374,7 +371,7 @@ describe('Platform Routes - Tokens', () => {
       // For now, we'll just ensure the endpoint exists and returns proper structure
       const res = await request(app)
         .delete('/api/platforms/tokens/twitter')
-        .set('Authorization', `Bearer ${validToken}`);
+        .set(authHeader(validToken));
 
       expect(res.status).toBe(404); // No tokens to delete
       expect(res.body).toMatchObject({

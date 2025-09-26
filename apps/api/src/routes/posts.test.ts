@@ -17,9 +17,23 @@ vi.mock('@squidbox/twitter-api', () => ({
   uploadMedia: vi.fn().mockResolvedValue('mock-media-id'),
 }));
 
+// Mock the queue system
+vi.mock('../queue', () => ({
+  downloadQueue: {
+    add: vi.fn().mockResolvedValue({ id: 'mock-download-job' }),
+  },
+  twitterQueue: {
+    add: vi.fn().mockResolvedValue({ id: 'mock-twitter-job' }),
+  },
+  QUEUE_NAMES: {
+    download: 'media:download',
+    twitter: 'post:twitter',
+  },
+}));
+
 const mockCreateTweet = vi.mocked(createTweet);
 
-describe('POST /api/post', () => {
+describe('POST /api/posts', () => {
   let authToken: string;
   let tempDir: string;
 
@@ -50,8 +64,8 @@ describe('POST /api/post', () => {
       .send({
         email: 'test@example.com',
         password: 'password123',
-        name: 'Test User',
-      });
+      })
+      .expect(201);
 
     authToken = userResponse.body.token;
     
@@ -82,9 +96,7 @@ describe('POST /api/post', () => {
     vi.clearAllMocks();
   });
 
-  it('should create a post successfully', async () => {
-    mockCreateTweet.mockResolvedValue('1234567890123456789');
-
+  it('should create a post successfully and enqueue download job', async () => {
     const postData: CreatePostRequest = {
       postGroups: [
         {
@@ -100,35 +112,34 @@ describe('POST /api/post', () => {
     };
 
     const response = await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .set('Authorization', `Bearer ${authToken}`)
       .send(postData)
       .expect(200);
 
     expect(response.body).toMatchObject({
       id: expect.any(String),
-      status: 'success',
-      platformResults: [
-        {
-          platform: 'twitter',
-          success: true,
-          platformPostId: '1234567890123456789',
-        },
-      ],
+      status: 'pending', // Now returns pending since jobs are queued
+      platformResults: [], // Empty initially since jobs are queued
+      groupId: expect.any(String),
       createdAt: expect.any(String),
     });
 
-    expect(mockCreateTweet).toHaveBeenCalledWith(
-      expect.any(String),
+    // Check that download job was enqueued
+    const { downloadQueue } = await import('../queue');
+    expect(downloadQueue.add).toHaveBeenCalledWith(
+      'media:download',
       expect.objectContaining({
-        text: 'Hello from Squidbox! 🐙',
+        groupId: expect.any(String),
       }),
+      expect.objectContaining({
+        attempts: 2,
+        backoff: { type: 'fixed', delay: 1000 },
+      })
     );
   });
 
-  it('should create a post with media successfully', async () => {
-    mockCreateTweet.mockResolvedValue('1234567890123456789');
-
+  it('should create a post with media successfully and enqueue download job', async () => {
     const postData: CreatePostRequest = {
       postGroups: [
         {
@@ -149,22 +160,27 @@ describe('POST /api/post', () => {
     };
 
     const response = await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .set('Authorization', `Bearer ${authToken}`)
       .send(postData)
       .expect(200);
 
     expect(response.body).toMatchObject({
       id: expect.any(String),
-      status: 'success',
-      platformResults: [
-        {
-          platform: 'twitter',
-          success: true,
-          platformPostId: '1234567890123456789',
-        },
-      ],
+      status: 'pending',
+      platformResults: [],
+      groupId: expect.any(String),
     });
+
+    // Check that download job was enqueued
+    const { downloadQueue } = await import('../queue');
+    expect(downloadQueue.add).toHaveBeenCalledWith(
+      'media:download',
+      expect.objectContaining({
+        groupId: expect.any(String),
+      }),
+      expect.any(Object)
+    );
   });
 
   it('should handle video media', async () => {
@@ -190,21 +206,16 @@ describe('POST /api/post', () => {
     };
 
     const response = await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .set('Authorization', `Bearer ${authToken}`)
       .send(postData)
       .expect(200);
 
     expect(response.body).toMatchObject({
       id: expect.any(String),
-      status: 'success',
-      platformResults: [
-        {
-          platform: 'twitter',
-          success: true,
-          platformPostId: '1234567890123456789',
-        },
-      ],
+      status: 'pending',
+      platformResults: [],
+      groupId: expect.any(String),
     });
   });
 
@@ -243,27 +254,20 @@ describe('POST /api/post', () => {
     };
 
     const response = await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .set('Authorization', `Bearer ${authToken}`)
       .send(postData)
       .expect(200);
 
     expect(response.body).toMatchObject({
       id: expect.any(String),
-      status: 'success',
-      platformResults: [
-        {
-          platform: 'twitter',
-          success: true,
-          platformPostId: '1234567890123456789',
-        },
-      ],
+      status: 'pending',
+      platformResults: [],
+      groupId: expect.any(String),
     });
   });
 
-  it('should handle multiple platforms', async () => {
-    mockCreateTweet.mockResolvedValue('1234567890123456789');
-
+  it('should handle multiple platforms and enqueue download job', async () => {
     const postData: CreatePostRequest = {
       postGroups: [
         {
@@ -279,27 +283,27 @@ describe('POST /api/post', () => {
     };
 
     const response = await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .set('Authorization', `Bearer ${authToken}`)
       .send(postData)
       .expect(200);
 
     expect(response.body).toMatchObject({
       id: expect.any(String),
-      status: 'partial', // One success, one not implemented
-      platformResults: expect.arrayContaining([
-        {
-          platform: 'twitter',
-          success: true,
-          platformPostId: '1234567890123456789',
-        },
-        {
-          platform: 'bluesky',
-          success: false,
-          error: 'Bluesky posting not yet implemented',
-        },
-      ]),
+      status: 'pending', // Now returns pending since jobs are queued
+      platformResults: [], // Empty initially since jobs are queued
+      groupId: expect.any(String),
     });
+
+    // Check that download job was enqueued
+    const { downloadQueue } = await import('../queue');
+    expect(downloadQueue.add).toHaveBeenCalledWith(
+      'media:download',
+      expect.objectContaining({
+        groupId: expect.any(String),
+      }),
+      expect.any(Object)
+    );
   });
 
   it('should return 401 without authentication', async () => {
@@ -318,7 +322,7 @@ describe('POST /api/post', () => {
     };
 
     await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .send(postData)
       .expect(401);
   });
@@ -331,7 +335,7 @@ describe('POST /api/post', () => {
     };
 
     const response = await request(app)
-      .post('/api/post')
+      .post('/api/posts')
       .set('Authorization', `Bearer ${authToken}`)
       .send(invalidData)
       .expect(400);
@@ -340,5 +344,39 @@ describe('POST /api/post', () => {
       error: 'Invalid request body',
       details: expect.any(Array),
     });
+  });
+
+  it('should create posts with same groupId', async () => {
+    const postData: CreatePostRequest = {
+      postGroups: [
+        {
+          platforms: ['twitter', 'bluesky'],
+          posts: [
+            {
+              text: 'Hello from Squidbox! 🐙',
+              media: [],
+            },
+          ],
+        },
+      ],
+    };
+
+    const response = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send(postData)
+      .expect(200);
+
+    // Check that both posts were created with the same groupId
+    const { prisma } = await import('../prisma');
+    const posts = await prisma.post.findMany({
+      where: { groupId: response.body.groupId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    expect(posts).toHaveLength(2);
+    expect(posts[0].groupId).toBe(posts[1].groupId);
+    expect(posts[0].platform).toBe('twitter');
+    expect(posts[1].platform).toBe('bluesky');
   });
 });

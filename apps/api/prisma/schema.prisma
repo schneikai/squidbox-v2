@@ -23,13 +23,12 @@ enum Platform {
 enum PostStatus {
   pending
   success
-  partial
   failed
 }
 
-enum MediaDownloadStatus {
+enum JobStatus {
   pending
-  downloading
+  working
   success
   failed
 }
@@ -84,11 +83,12 @@ model Post {
   platform         Platform
   text             String
   status           PostStatus
+  groupId          String   // Groups posts that should be processed together
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postingResults   PostingResult[]
+  postResults      PostResult[]
   postMedia        PostMedia[]
 }
 
@@ -121,27 +121,26 @@ model PostMedia {
 model MediaDownloadResult {
   id               String   @id @default(cuid())
   mediaId          String   @unique
-  status           MediaDownloadStatus
-  localPath        String?  // Path to downloaded file
-  error            String?  // Error message if download failed
-  downloadedAt     DateTime?
+  status           JobStatus
+  statusText       String?  // Progress text or error message
+  jobId            String?  // BullMQ job id
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  
+
   media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 }
 
-model PostingResult {
+model PostResult {
   id               String   @id @default(cuid())
   postId           String
-  platform         Platform
-  success          Boolean
+  status           JobStatus
+  statusText       String?  // Progress text or error message
   platformPostId   String?  // ID returned by the platform
-  error            String?  // Error message if failed
+  jobId            String?  // BullMQ job id
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  
+
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   
-  @@unique([postId, platform])
+  @@unique([postId])
 }

@@ -13,7 +13,7 @@ export async function downloadMediaFile(url: string, mediaId: string): Promise<s
   const fileExtension = path.extname(new globalThis.URL(url).pathname) || '.jpg';
   const fileName = `${mediaId}${fileExtension}`;
   const filePath = path.join(mediaDir, fileName);
-  
+
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https:') ? https : http;
     

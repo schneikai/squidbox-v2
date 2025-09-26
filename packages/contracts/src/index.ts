@@ -108,11 +108,44 @@ export type PostResult = z.infer<typeof PostResult>;
 
 export const CreatePostResponse = z.object({
   id: z.string(),
-  status: z.enum(['pending', 'success', 'partial', 'failed']),
+  status: z.enum(['pending', 'success', 'failed']),
   platformResults: z.array(PostResult),
+  groupId: z.string(),
   createdAt: z.string(),
 });
 export type CreatePostResponse = z.infer<typeof CreatePostResponse>;
+
+// Post status for group status endpoint
+export const PostStatus = z.object({
+  postId: z.string(),
+  platform: Platform,
+  text: z.string(),
+  status: z.enum(['pending', 'success', 'failed']),
+  downloadStatus: z.enum(['pending', 'working', 'completed', 'failed']),
+  downloadProgress: z.string(),
+  downloadError: z.string(),
+  postStatus: z.enum(['pending', 'working', 'success', 'failed']),
+  postStatusText: z.string(),
+  platformPostId: z.string(),
+});
+export type PostStatus = z.infer<typeof PostStatus>;
+
+// Group status response
+export const GroupStatusResponse = z.object({
+  groupId: z.string(),
+  status: z.enum(['pending', 'working', 'success', 'failed']),
+  posts: z.array(PostStatus),
+});
+export type GroupStatusResponse = z.infer<typeof GroupStatusResponse>;
+
+// Retry response
+export const RetryResponse = z.object({
+  ok: z.boolean(),
+  retriedCount: z.number(),
+  groupId: z.string(),
+  message: z.string().optional(),
+});
+export type RetryResponse = z.infer<typeof RetryResponse>;
 
 // ============================================================================
 // FRONTEND COMPOSER TYPES

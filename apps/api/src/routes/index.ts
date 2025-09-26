@@ -12,7 +12,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/health', healthRoutes);
-router.use('/post', postRoutes);
+router.use('/posts', postRoutes);
 router.use('/platforms', platformRoutes);
 
 export default router;
