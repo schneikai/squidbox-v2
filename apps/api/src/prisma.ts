@@ -1,9 +1,9 @@
 import { PrismaClient} from '@prisma/client';
 
-let prisma: PrismaClient | undefined;
+let client: PrismaClient | undefined;
 
 export function getPrisma(): PrismaClient {
-  if (!prisma) {
+  if (!client) {
     const url = process.env.DATABASE_URL;
     if (!url) {
       throw new Error(
@@ -11,11 +11,13 @@ export function getPrisma(): PrismaClient {
       );
     }
 
-    prisma = new PrismaClient({
+    client = new PrismaClient({
       datasources: {
         db: { url },
       },
     });
   }
-  return prisma;
+  return client;
 }
+
+export const prisma = getPrisma();

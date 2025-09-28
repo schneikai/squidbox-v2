@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApi } from '../api';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { authenticateUser, createUser, authHeader } from '../../tests/utils';
 
 const app = createApi();
@@ -36,7 +36,7 @@ describe('GET /api/posts/group/:groupId/status', () => {
     groupId = 'test-group-123';
 
     // Create a test post
-    await prisma.post.create({
+    await getPrisma().post.create({
       data: {
         userId,
         platform: 'twitter',
@@ -66,7 +66,7 @@ describe('GET /api/posts/group/:groupId/status', () => {
     // Create another user and post
     const otherUser = await createUser({ email: 'other@example.com' });
 
-    await prisma.post.create({
+    await getPrisma().post.create({
       data: {
         userId: otherUser.id,
         platform: 'twitter',

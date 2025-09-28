@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { startDownloadWorker } from './downloadWorker';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { downloadMedia } from '../utils/downloadMedia';
 import { twitterQueue } from '../queue';
 import { existsSync } from 'fs';
@@ -49,38 +49,38 @@ describe('downloadWorker', () => {
 
   afterEach(async () => {
     // Clean up any test data
-    await prisma.postResult.deleteMany();
-    await prisma.postMedia.deleteMany();
-    await prisma.media.deleteMany();
-    await prisma.post.deleteMany();
-    await prisma.user.deleteMany();
+    await getPrisma().postResult.deleteMany();
+    await getPrisma().postMedia.deleteMany();
+    await getPrisma().media.deleteMany();
+    await getPrisma().post.deleteMany();
+    await getPrisma().user.deleteMany();
   });
 
   describe('basic functionality', () => {
     it('should process posts and download media successfully', async () => {
       // Create test data
-      const user = await prisma.user.create({
+      const user = await getPrisma().user.create({
         data: {
           email: 'test@example.com',
           passwordHash: 'hashed-password',
         },
       });
 
-      const media1 = await prisma.media.create({
+      const media1 = await getPrisma().media.create({
         data: {
           type: 'image',
           url: 'https://example.com/image1.jpg',
         },
       });
 
-      const media2 = await prisma.media.create({
+      const media2 = await getPrisma().media.create({
         data: {
           type: 'image',
           url: 'https://example.com/image2.jpg',
         },
       });
 
-      const post1 = await prisma.post.create({
+      const post1 = await getPrisma().post.create({
         data: {
           userId: user.id,
           platform: 'twitter',
@@ -90,7 +90,7 @@ describe('downloadWorker', () => {
         },
       });
 
-      const post2 = await prisma.post.create({
+      const post2 = await getPrisma().post.create({
         data: {
           userId: user.id,
           platform: 'twitter',
@@ -100,7 +100,7 @@ describe('downloadWorker', () => {
         },
       });
 
-      await prisma.postMedia.createMany({
+      await getPrisma().postMedia.createMany({
         data: [
           { postId: post1.id, mediaId: media1.id, order: 0 },
           { postId: post2.id, mediaId: media2.id, order: 0 },
@@ -161,21 +161,21 @@ describe('downloadWorker', () => {
 
     it('should handle retryOnly mode correctly', async () => {
       // Create test data with failed posts
-      const user = await prisma.user.create({
+      const user = await getPrisma().user.create({
         data: {
           email: 'test@example.com',
           passwordHash: 'hashed-password',
         },
       });
 
-      const media = await prisma.media.create({
+      const media = await getPrisma().media.create({
         data: {
           type: 'image',
           url: 'https://example.com/image.jpg',
         },
       });
 
-      const post = await prisma.post.create({
+      const post = await getPrisma().post.create({
         data: {
           userId: user.id,
           platform: 'twitter',
@@ -185,7 +185,7 @@ describe('downloadWorker', () => {
         },
       });
 
-      await prisma.postMedia.create({
+      await getPrisma().postMedia.create({
         data: {
           postId: post.id,
           mediaId: media.id,
@@ -208,14 +208,14 @@ describe('downloadWorker', () => {
 
     it('should skip download when file already exists', async () => {
       // Create test data
-      const user = await prisma.user.create({
+      const user = await getPrisma().user.create({
         data: {
           email: 'test@example.com',
           passwordHash: 'hashed-password',
         },
       });
 
-      const media = await prisma.media.create({
+      const media = await getPrisma().media.create({
         data: {
           type: 'image',
           url: 'https://example.com/image.jpg',
@@ -223,7 +223,7 @@ describe('downloadWorker', () => {
         },
       });
 
-      const post = await prisma.post.create({
+      const post = await getPrisma().post.create({
         data: {
           userId: user.id,
           platform: 'twitter',
@@ -233,7 +233,7 @@ describe('downloadWorker', () => {
         },
       });
 
-      await prisma.postMedia.create({
+      await getPrisma().postMedia.create({
         data: {
           postId: post.id,
           mediaId: media.id,
@@ -254,14 +254,14 @@ describe('downloadWorker', () => {
 
     it('should handle non-Twitter platforms by creating failed results', async () => {
       // Create test data with non-Twitter platform
-      const user = await prisma.user.create({
+      const user = await getPrisma().user.create({
         data: {
           email: 'test@example.com',
           passwordHash: 'hashed-password',
         },
       });
 
-      const post = await prisma.post.create({
+      const post = await getPrisma().post.create({
         data: {
           userId: user.id,
           platform: 'bluesky', // Non-Twitter platform
@@ -280,7 +280,7 @@ describe('downloadWorker', () => {
       expect(mockTwitterQueueAdd).not.toHaveBeenCalled();
 
       // Verify failed result was created
-      const postResult = await prisma.postResult.findFirst({
+      const postResult = await getPrisma().postResult.findFirst({
         where: { postId: post.id },
       });
 
@@ -289,7 +289,7 @@ describe('downloadWorker', () => {
       expect(postResult?.statusText).toBe('bluesky posting not yet implemented');
 
       // Verify post status was updated to failed
-      const updatedPost = await prisma.post.findUnique({
+      const updatedPost = await getPrisma().post.findUnique({
         where: { id: post.id },
       });
       expect(updatedPost?.status).toBe('failed');
@@ -331,28 +331,28 @@ describe('downloadWorker', () => {
   describe('progress tracking', () => {
     it('should update progress correctly for multiple media items', async () => {
       // Create test data with multiple media items
-      const user = await prisma.user.create({
+      const user = await getPrisma().user.create({
         data: {
           email: 'test@example.com',
           passwordHash: 'hashed-password',
         },
       });
 
-      const media1 = await prisma.media.create({
+      const media1 = await getPrisma().media.create({
         data: {
           type: 'image',
           url: 'https://example.com/image1.jpg',
         },
       });
 
-      const media2 = await prisma.media.create({
+      const media2 = await getPrisma().media.create({
         data: {
           type: 'image',
           url: 'https://example.com/image2.jpg',
         },
       });
 
-      const post = await prisma.post.create({
+      const post = await getPrisma().post.create({
         data: {
           userId: user.id,
           platform: 'twitter',
@@ -362,7 +362,7 @@ describe('downloadWorker', () => {
         },
       });
 
-      await prisma.postMedia.createMany({
+      await getPrisma().postMedia.createMany({
         data: [
           { postId: post.id, mediaId: media1.id, order: 0 },
           { postId: post.id, mediaId: media2.id, order: 1 },

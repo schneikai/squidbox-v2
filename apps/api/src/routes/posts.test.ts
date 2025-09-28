@@ -10,6 +10,7 @@ import { Platform } from '@prisma/client';
 const app = createApi();
 import { createTweet } from '@squidbox/twitter-api';
 import { CreatePostRequest } from '@squidbox/contracts';
+import { getPrisma } from '../prisma';
 
 // Mock the Twitter API
 vi.mock('@squidbox/twitter-api', () => ({
@@ -70,8 +71,7 @@ describe('POST /api/posts', () => {
     authToken = userResponse.body.token;
     
     // Create Twitter OAuth tokens for the test user
-    const { prisma } = await import('../prisma');
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: userResponse.body.user.id,
         platform: 'twitter',
@@ -368,8 +368,7 @@ describe('POST /api/posts', () => {
       .expect(200);
 
     // Check that both posts were created with the same groupId
-    const { prisma } = await import('../prisma');
-    const posts = await prisma.post.findMany({
+    const posts = await getPrisma().post.findMany({
       where: { groupId: response.body.groupId },
       orderBy: { createdAt: 'asc' },
     });

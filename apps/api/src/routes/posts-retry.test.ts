@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApi } from '../api';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { authenticateUser, createUser, authHeader } from '../../tests/utils';
 
 const app = createApi();
@@ -35,7 +35,7 @@ describe('POST /api/posts/group/:groupId/retry', () => {
     authToken = auth.token;
 
     // Create test posts in the group
-    await prisma.post.create({
+    await getPrisma().post.create({
       data: {
         userId,
         platform: 'twitter',
@@ -45,7 +45,7 @@ describe('POST /api/posts/group/:groupId/retry', () => {
       },
     });
 
-    await prisma.post.create({
+    await getPrisma().post.create({
       data: {
         userId,
         platform: 'bluesky',
@@ -84,7 +84,7 @@ describe('POST /api/posts/group/:groupId/retry', () => {
     );
 
     // Check that all posts in the group were reset to pending
-    const posts = await prisma.post.findMany({
+    const posts = await getPrisma().post.findMany({
       where: { groupId },
     });
 
@@ -103,7 +103,7 @@ describe('POST /api/posts/group/:groupId/retry', () => {
     // Create another user and post
     const otherUser = await createUser({ email: 'other@example.com' });
 
-    await prisma.post.create({
+    await getPrisma().post.create({
       data: {
         userId: otherUser.id,
         platform: 'twitter',
@@ -122,7 +122,7 @@ describe('POST /api/posts/group/:groupId/retry', () => {
   it('should handle case with no failed posts', async () => {
     // Create a group with only successful posts
     const successGroupId = 'success-group';
-    await prisma.post.create({
+    await getPrisma().post.create({
       data: {
         userId,
         platform: 'twitter',

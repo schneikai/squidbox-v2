@@ -1,11 +1,9 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient, Platform } from '@prisma/client';
 import { createApi } from '../../api';
 import { signJwt } from '../../auth';
-
-const prisma = new PrismaClient();
+import { getPrisma } from '../../prisma';
 
 describe('Platform Routes - GET /status', () => {
   let app: any;
@@ -16,7 +14,7 @@ describe('Platform Routes - GET /status', () => {
     app = createApi();
 
     // Create a test user
-    testUser = await prisma.user.create({
+    testUser = await getPrisma().user.create({
       data: {
         email: 'status-test@example.com',
         passwordHash: 'hashedpassword',
@@ -60,7 +58,7 @@ describe('Platform Routes - GET /status', () => {
     const now = new Date();
     const futureDate = new Date(now.getTime() + 3600 * 1000); // 1 hour from now
 
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: testUser.id,
         platform: 'twitter',
@@ -73,7 +71,7 @@ describe('Platform Routes - GET /status', () => {
       },
     });
 
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: testUser.id,
         platform: 'bluesky',
@@ -137,7 +135,7 @@ describe('Platform Routes - GET /status', () => {
     // Create an expired token
     const pastDate = new Date(Date.now() - 3600 * 1000); // 1 hour ago
 
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: testUser.id,
         platform: 'twitter',
@@ -167,7 +165,7 @@ describe('Platform Routes - GET /status', () => {
 
   it('should mark tokens without expiration as connected', async () => {
     // Create a token without expiration
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: testUser.id,
         platform: 'twitter',
@@ -204,7 +202,7 @@ describe('Platform Routes - GET /status', () => {
 
   it('should only return status for the authenticated user', async () => {
     // Create another user with tokens
-    const otherUser = await prisma.user.create({
+    const otherUser = await getPrisma().user.create({
       data: {
         email: 'other-status-user@example.com',
         passwordHash: 'hashedpassword',
@@ -212,7 +210,7 @@ describe('Platform Routes - GET /status', () => {
     });
 
     // Create tokens for the other user
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: otherUser.id,
         platform: 'twitter',
@@ -225,7 +223,7 @@ describe('Platform Routes - GET /status', () => {
     });
 
     // Create tokens for the test user
-    await prisma.oAuthToken.create({
+    await getPrisma().oAuthToken.create({
       data: {
         userId: testUser.id,
         platform: 'bluesky',

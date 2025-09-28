@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { createPostMediaEntries } from './createPostMediaEntries';
 
 describe('createPostMediaEntries', () => {
   let postId: string;
 
   beforeEach(async () => {
-    const user = await prisma.user.create({
+    const user = await getPrisma().user.create({
       data: { email: `u_${Date.now()}@example.com`, passwordHash: 'hash' },
     });
-    const post = await prisma.post.create({
+    const post = await getPrisma().post.create({
       data: {
         userId: user.id,
         platform: 'twitter',
@@ -30,12 +30,12 @@ describe('createPostMediaEntries', () => {
     const result = await createPostMediaEntries(postId, mediaItems as any);
     expect(result).toHaveLength(2);
 
-    const links = await prisma.postMedia.findMany({ where: { postId }, orderBy: { order: 'asc' } });
+    const links = await getPrisma().postMedia.findMany({ where: { postId }, orderBy: { order: 'asc' } });
     expect(links).toHaveLength(2);
     expect(links[0].order).toBe(0);
     expect(links[1].order).toBe(1);
 
-    const media = await prisma.media.findMany({ where: { url: { in: mediaItems.map(m => m.url) } } });
+    const media = await getPrisma().media.findMany({ where: { url: { in: mediaItems.map(m => m.url) } } });
     expect(media).toHaveLength(2);
   });
 

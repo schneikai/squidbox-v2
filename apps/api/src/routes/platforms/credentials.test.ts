@@ -1,12 +1,11 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient, Platform } from '@prisma/client';
+import { Platform } from '@prisma/client';
 import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { createApi } from '../../api';
 import { signJwt } from '../../auth';
-
-const prisma = new PrismaClient();
+import { getPrisma } from '../../prisma';
 
 describe('Platform Routes - POST /credentials', () => {
   let app: any;
@@ -24,7 +23,7 @@ describe('Platform Routes - POST /credentials', () => {
     app = createApi();
 
     // Create a test user
-    testUser = await prisma.user.create({
+    testUser = await getPrisma().user.create({
       data: {
         email: 'test@example.com',
         passwordHash: 'hashedpassword',
@@ -48,7 +47,7 @@ describe('Platform Routes - POST /credentials', () => {
     });
 
     // Verify the credentials were stored in the database
-    const storedCredentials = await prisma.platformCredentials.findUnique({
+    const storedCredentials = await getPrisma().platformCredentials.findUnique({
       where: {
         userId_platform: {
           userId: testUser.id,
@@ -65,7 +64,7 @@ describe('Platform Routes - POST /credentials', () => {
 
   it('should update existing credentials when upserting', async () => {
     // First, create existing credentials
-    await prisma.platformCredentials.create({
+    await getPrisma().platformCredentials.create({
       data: {
         userId: testUser.id,
         platform: 'onlyfans',
@@ -84,7 +83,7 @@ describe('Platform Routes - POST /credentials', () => {
     expect(res.status).toBe(200);
 
     // Verify the credentials were updated
-    const updatedCredentials = await prisma.platformCredentials.findUnique({
+    const updatedCredentials = await getPrisma().platformCredentials.findUnique({
       where: {
         userId_platform: {
           userId: testUser.id,
@@ -217,7 +216,7 @@ describe('Platform Routes - GET /credentials/:platform', () => {
     app = createApi();
 
     // Create a test user
-    testUser = await prisma.user.create({
+    testUser = await getPrisma().user.create({
       data: {
         email: 'test@example.com',
         passwordHash: 'hashedpassword',
@@ -238,7 +237,7 @@ describe('Platform Routes - GET /credentials/:platform', () => {
       totpSecret: 'JBSWY3DPEHPK3PXP',
     };
 
-    await prisma.platformCredentials.create({ data: credentialsData });
+    await getPrisma().platformCredentials.create({ data: credentialsData });
 
     const res = await request(app)
       .get('/api/platforms/credentials/onlyfans')
@@ -288,7 +287,7 @@ describe('Platform Routes - DELETE /credentials/:platform', () => {
     app = createApi();
 
     // Create a test user
-    testUser = await prisma.user.create({
+    testUser = await getPrisma().user.create({
       data: {
         email: 'test@example.com',
         passwordHash: 'hashedpassword',
@@ -309,7 +308,7 @@ describe('Platform Routes - DELETE /credentials/:platform', () => {
       totpSecret: 'JBSWY3DPEHPK3PXP',
     };
 
-    await prisma.platformCredentials.create({ data: credentialsData });
+    await getPrisma().platformCredentials.create({ data: credentialsData });
 
     const res = await request(app)
       .delete('/api/platforms/credentials/onlyfans')
@@ -322,7 +321,7 @@ describe('Platform Routes - DELETE /credentials/:platform', () => {
     });
 
     // Verify the credentials were deleted
-    const deletedCredentials = await prisma.platformCredentials.findUnique({
+    const deletedCredentials = await getPrisma().platformCredentials.findUnique({
       where: {
         userId_platform: {
           userId: testUser.id,

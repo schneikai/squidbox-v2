@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { downloadPostMedia } from './downloadPostMedia';
 
 vi.mock('./downloadMedia', () => ({
@@ -10,10 +10,10 @@ describe('downloadPostMedia', () => {
   let postId: string;
 
   beforeEach(async () => {
-    const user = await prisma.user.create({
+    const user = await getPrisma().user.create({
       data: { email: `u_${Date.now()}@example.com`, passwordHash: 'hash' },
     });
-    const post = await prisma.post.create({
+    const post = await getPrisma().post.create({
       data: {
         userId: user.id,
         platform: 'twitter',
@@ -24,10 +24,10 @@ describe('downloadPostMedia', () => {
     });
     postId = post.id;
 
-    const m1 = await prisma.media.create({ data: { type: 'image', url: 'https://ex.com/1.jpg' } });
-    const m2 = await prisma.media.create({ data: { type: 'video', url: 'https://ex.com/2.mp4' } });
+    const m1 = await getPrisma().media.create({ data: { type: 'image', url: 'https://ex.com/1.jpg' } });
+    const m2 = await getPrisma().media.create({ data: { type: 'video', url: 'https://ex.com/2.mp4' } });
 
-    await prisma.postMedia.createMany({
+    await getPrisma().postMedia.createMany({
       data: [
         { postId, mediaId: m1.id, order: 0 },
         { postId, mediaId: m2.id, order: 1 },

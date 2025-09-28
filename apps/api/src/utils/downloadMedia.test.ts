@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 
 // Mock file downloader to avoid network
 vi.mock('./downloadMediaFile', () => ({
@@ -10,7 +10,7 @@ describe('downloadMedia', () => {
   let mediaId: string;
 
   beforeEach(async () => {
-    const media = await prisma.media.create({
+    const media = await getPrisma().media.create({
       data: { type: 'image', url: `https://ex.com/${Date.now()}.jpg` },
     });
     mediaId = media.id;
@@ -21,16 +21,16 @@ describe('downloadMedia', () => {
     const local = await downloadMedia(mediaId, 'https://ex.com/a.jpg');
     expect(local).toBe('/tmp/dl-file.jpg');
 
-    const updated = await prisma.media.findUnique({ where: { id: mediaId } });
+    const updated = await getPrisma().media.findUnique({ where: { id: mediaId } });
     expect(updated?.localPath).toBe('/tmp/dl-file.jpg');
 
-    const res = await prisma.mediaDownloadResult.findUnique({ where: { mediaId } });
+    const res = await getPrisma().mediaDownloadResult.findUnique({ where: { mediaId } });
     expect(res?.status).toBe('success');
   });
 
   it('returns existing localPath without downloading again', async () => {
     // Seed localPath
-    await prisma.media.update({ where: { id: mediaId }, data: { localPath: '/tmp/existing.jpg' } });
+    await getPrisma().media.update({ where: { id: mediaId }, data: { localPath: '/tmp/existing.jpg' } });
     const { downloadMediaFile } = await import('./downloadMediaFile');
     const { downloadMedia } = await import('./downloadMedia');
     const local = await downloadMedia(mediaId, 'https://ex.com/a.jpg');
@@ -48,7 +48,7 @@ describe('downloadMedia', () => {
     vi.mocked(downloadMediaFile).mockRejectedValueOnce(new Error('boom'));
     const { downloadMedia } = await import('./downloadMedia');
     await expect(downloadMedia(mediaId, 'https://ex.com/a.jpg')).rejects.toThrow('boom');
-    const res = await prisma.mediaDownloadResult.findUnique({ where: { mediaId } });
+    const res = await getPrisma().mediaDownloadResult.findUnique({ where: { mediaId } });
     expect(res?.status).toBe('failed');
     expect(res?.statusText).toBe('boom');
   });

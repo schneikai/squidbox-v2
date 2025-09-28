@@ -1,12 +1,12 @@
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-import { PrismaClient, Platform } from '@prisma/client';
+import { Platform } from '@prisma/client';
 import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { createApi } from '../../api';
 import { authenticateUser, createUser, authHeader } from '../../../tests/utils';
+import { getPrisma } from '../../prisma';
 
-const prisma = new PrismaClient();
 
 describe('Platform Routes - Tokens', () => {
   let app: any;
@@ -36,7 +36,7 @@ describe('Platform Routes - Tokens', () => {
         userId: 'platform_user_123',
       };
 
-      await prisma.oAuthToken.create({
+      await getPrisma().oAuthToken.create({
         data: {
           userId: testUser.id,
           platform: tokenData.platform as Platform,
@@ -113,7 +113,7 @@ describe('Platform Routes - Tokens', () => {
       const platforms = SUPPORTED_PLATFORMS.map(p => p.id);
       
       for (const platform of platforms) {
-        await prisma.oAuthToken.create({
+        await getPrisma().oAuthToken.create({
           data: {
             userId: testUser.id,
             platform: platform,
@@ -168,7 +168,7 @@ describe('Platform Routes - Tokens', () => {
         .send(tokenData);
 
       // Verify tokens exist
-      const existingTokens = await prisma.oAuthToken.findMany({
+      const existingTokens = await getPrisma().oAuthToken.findMany({
         where: { userId: testUser.id, platform: 'twitter' },
       });
       expect(existingTokens).toHaveLength(1);
@@ -185,7 +185,7 @@ describe('Platform Routes - Tokens', () => {
       });
 
       // Verify tokens are deleted
-      const remainingTokens = await prisma.oAuthToken.findMany({
+      const remainingTokens = await getPrisma().oAuthToken.findMany({
         where: { userId: testUser.id, platform: 'twitter' },
       });
       expect(remainingTokens).toHaveLength(0);
@@ -223,7 +223,7 @@ describe('Platform Routes - Tokens', () => {
 
     it('should only delete tokens for the authenticated user', async () => {
       // Create another user with tokens
-      const otherUser = await prisma.user.create({
+      const otherUser = await getPrisma().user.create({
         data: {
           email: 'other-user@example.com',
           passwordHash: 'hashedpassword',
@@ -231,7 +231,7 @@ describe('Platform Routes - Tokens', () => {
       });
 
       // Create tokens for the other user
-      await prisma.oAuthToken.create({
+      await getPrisma().oAuthToken.create({
         data: {
           userId: otherUser.id,
           platform: 'twitter',
@@ -244,7 +244,7 @@ describe('Platform Routes - Tokens', () => {
       });
 
       // Create tokens for the test user
-      await prisma.oAuthToken.create({
+      await getPrisma().oAuthToken.create({
         data: {
           userId: testUser.id,
           platform: 'twitter',
@@ -264,13 +264,13 @@ describe('Platform Routes - Tokens', () => {
       expect(res.status).toBe(200);
 
       // Verify only test user's tokens are deleted
-      const testUserTokens = await prisma.oAuthToken.findMany({
+      const testUserTokens = await getPrisma().oAuthToken.findMany({
         where: { userId: testUser.id, platform: 'twitter' },
       });
       expect(testUserTokens).toHaveLength(0);
 
       // Verify other user's tokens still exist
-      const otherUserTokens = await prisma.oAuthToken.findMany({
+      const otherUserTokens = await getPrisma().oAuthToken.findMany({
         where: { userId: otherUser.id, platform: 'twitter' },
       });
       expect(otherUserTokens).toHaveLength(1);
@@ -285,7 +285,7 @@ describe('Platform Routes - Tokens', () => {
 
     it('should handle multiple platforms correctly', async () => {
       // Create tokens for multiple platforms
-      await prisma.oAuthToken.create({
+      await getPrisma().oAuthToken.create({
         data: {
           userId: testUser.id,
           platform: 'twitter',
@@ -297,7 +297,7 @@ describe('Platform Routes - Tokens', () => {
         },
       });
 
-      await prisma.oAuthToken.create({
+      await getPrisma().oAuthToken.create({
         data: {
           userId: testUser.id,
           platform: 'bluesky',
@@ -317,13 +317,13 @@ describe('Platform Routes - Tokens', () => {
       expect(res.status).toBe(200);
 
       // Verify only Twitter tokens are deleted
-      const twitterTokens = await prisma.oAuthToken.findMany({
+      const twitterTokens = await getPrisma().oAuthToken.findMany({
         where: { userId: testUser.id, platform: 'twitter' },
       });
       expect(twitterTokens).toHaveLength(0);
 
       // Verify Bluesky tokens still exist
-      const blueskyTokens = await prisma.oAuthToken.findMany({
+      const blueskyTokens = await getPrisma().oAuthToken.findMany({
         where: { userId: testUser.id, platform: 'bluesky' },
       });
       expect(blueskyTokens).toHaveLength(1);
@@ -335,7 +335,7 @@ describe('Platform Routes - Tokens', () => {
       
       for (const platform of supportedPlatforms) {
         // Create tokens for this platform
-        await prisma.oAuthToken.create({
+        await getPrisma().oAuthToken.create({
           data: {
             userId: testUser.id,
             platform: platform as Platform,
@@ -359,7 +359,7 @@ describe('Platform Routes - Tokens', () => {
         });
 
         // Verify tokens are deleted
-        const remainingTokens = await prisma.oAuthToken.findMany({
+        const remainingTokens = await getPrisma().oAuthToken.findMany({
           where: { userId: testUser.id, platform: platform as Platform },
         });
         expect(remainingTokens).toHaveLength(0);
