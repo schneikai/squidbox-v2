@@ -27,12 +27,9 @@
     "dev": "turbo run dev --parallel",
     "dev:down": "pnpm -C apps/api dev:down",
 
-    "db:create": "pnpm -C apps/api db:create",
-    "db:reset": "pnpm -C apps/api db:reset",
-    "db:migrate": "pnpm -C apps/api db:migrate",
+    "dev:setup": "pnpm -C apps/api dev:setup",
 
     "deploy": "pnpm -C apps/api deploy",
-   
    
     "build": "turbo run build",
     "test": "turbo run test",

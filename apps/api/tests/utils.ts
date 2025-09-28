@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/auth';
-
-const prisma = new PrismaClient();
+import { getPrisma } from '../src/prisma';
 
 export type TestUser = {
   id: string;
@@ -12,7 +10,7 @@ export type TestUser = {
 export async function createUser(opts?: { email?: string; password?: string }): Promise<TestUser> {
   const email = opts?.email ?? `test_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@example.com`;
   const password = opts?.password ?? 'password123';
-  const user = await prisma.user.create({
+  const user = await getPrisma().user.create({
     data: {
       email,
       passwordHash: await hashPassword(password),

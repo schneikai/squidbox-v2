@@ -11,34 +11,31 @@ Shared TypeScript monorepo with:
 - Node `20.17.0` (`.nvmrc`)
 - pnpm (managed via Corepack)
 
-### Install
+### Setup
 
 ```bash
 nvm use
 corepack enable
 corepack prepare pnpm@9.12.3 --activate || npm i -g pnpm@9.12.3
 pnpm i
+
+# Start docker services and create database
+pnpm dev:setup
 ```
 
 ### Development
 
 ```bash
-# First-time setup: Create database and create dev user
-pnpm db:create
-
-# Start all services
 pnpm dev
 ```
 
-### Build
+### Database migrations
 
-```bash
-pnpm build
-```
+- change the schema in prisma/schema.prisma
+- run `pnpm dev:db:migrate`
+- add a descriptive name to the migration like `add_users` or `add_users_last_login_at`
 
-### Database
-
-Heads-up: The `pnpm db:reset` command was added while in active development without a need to
+<!-- Heads-up: The `pnpm db:reset` command was added while in active development without a need to
 maintain migrations. When you have deployed a production database and the data there is
 important, you must switch to the `pnpm db:migrate` command!
 
@@ -62,9 +59,11 @@ pnpm db:reset
 # Example: pnpm db:migrate add_users
 #          pnpm db:migrate add_username_to_users
 pnpm db:migrate
-```
+``` -->
 
 ### Testing
+
+we are using testcontainers for postgres and redis. You need to have docker installed on your local machine. If you get a authentication error, you need run `docker login` and complete the process. then run pnpm test again.
 
 Run all tests across the monorepo:
 

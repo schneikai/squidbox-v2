@@ -4,21 +4,22 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "docker compose up -d db redis || true && tsx watch src/index.ts",
+    "dev": "pnpm dev:up && tsx watch src/index.ts",
+    "dev:setup": "pnpm dev:up && pnpm dev:db && pnpm dev:seed",
+    "dev:up": "docker compose up -d db redis",
     "dev:down": "docker compose down -v --remove-orphans",
-
-    "db:create": "pnpm db:migrate init && tsx scripts/create-dev-user.ts",
-    "db:reset": "rm -rf prisma/migrations && npx prisma migrate reset --force && pnpm run db:create",
-    "db:migrate": "bash scripts/local-db-migrate.sh",
-    
+    "dev:db": "prisma migrate dev",
+    "dev:db:migrate": "prisma migrate dev",
+    "dev:db:reset": "prisma migrate reset",
+    "dev:seed": "tsx prisma/seed.ts",
     "deploy": "bash scripts/deploy-fly.sh",
-
     "build": "tsc -p tsconfig.json",
     "start": "node --enable-source-maps dist/index.js",
     "types": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -42,6 +43,8 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^11.6.0",
+    "@testcontainers/redis": "^11.6.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
@@ -60,6 +63,8 @@
     "prettier": "^3.3.3",
     "prisma": "^6.15.0",
     "supertest": "^7.0.0",
+    "testcontainers": "^11.6.0",
+    "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^2.0.5"

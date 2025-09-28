@@ -2,7 +2,6 @@ import { createWorker, QUEUE_NAMES, twitterQueue } from '../queue';
 import { prisma } from '../prisma';
 import { downloadMedia } from '../utils/downloadMedia';
 import { existsSync } from 'fs';
-import { join } from 'path';
 
 export function startDownloadWorker() {
   return createWorker<{ groupId: string; retryOnly?: boolean }>(QUEUE_NAMES.download, async (job) => {
