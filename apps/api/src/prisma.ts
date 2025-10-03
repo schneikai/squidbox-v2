@@ -1,24 +1,22 @@
-import { PrismaClient} from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
-let client: PrismaClient | undefined;
-
-// We need to return the client lazy here so we can do setup the proper
-// DATABASE_URL before the client is created.
+let prisma: PrismaClient | null = null;
+let currentUrl: string | undefined;
 
 export function getPrisma(): PrismaClient {
-  if (!client) {
-    const url = process.env.DATABASE_URL;
-    if (!url) {
-      throw new Error(
-        'DATABASE_URL not set. Did you forget to run globalSetup before importing prisma?'
-      );
-    }
-
-    client = new PrismaClient({
-      datasources: {
-        db: { url },
-      },
-    });
+  const url = process.env.DATABASE_URL;
+  if (!prisma || currentUrl !== url) {
+    prisma?.$disconnect().catch(() => {});
+    prisma = new PrismaClient();
+    currentUrl = url;
   }
-  return client;
+  return prisma;
+}
+
+export async function resetPrisma() {
+  if (prisma) {
+    await prisma.$disconnect().catch(() => {});
+    prisma = null;
+    currentUrl = undefined;
+  }
 }
