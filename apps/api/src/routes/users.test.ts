@@ -1,8 +1,9 @@
+import '../../test/setup';
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { createApi } from '../api';
-import { authenticateUser, createUser, authHeader } from '../../tests/utils';
+import { authenticateUser, createUser, authHeader } from '../../test/utils';
 
 describe('Users Routes - GET /me', () => {
   let app: any;

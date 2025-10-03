@@ -1,3 +1,4 @@
+import '../../test/setup';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { getPrisma } from '../prisma';
 import { createPostMediaEntries } from './createPostMediaEntries';

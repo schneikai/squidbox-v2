@@ -1,8 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-import './env'; // Load environment variables
 import { logger } from './logger';
 import { getPrisma } from './prisma';
 

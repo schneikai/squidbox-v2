@@ -1,5 +1,4 @@
 import express from 'express';
-import './env'; // Load environment variables
 import { logger } from './logger';
 import { startDownloadWorker } from './workers/downloadWorker';
 import { startTwitterWorker } from './workers/twitterWorker';

@@ -1,3 +1,4 @@
+import './env';
 import { startApi } from './api';
 import { startWorker } from './worker';
 

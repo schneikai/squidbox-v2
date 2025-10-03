@@ -1,6 +1,6 @@
+import '../../../test/setup';
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
-
 import { createApi } from '../../api';
 import { signJwt } from '../../auth';
 import { getPrisma } from '../../prisma';
@@ -11,6 +11,8 @@ describe('Platform Routes - GET /status', () => {
   let validToken: string;
 
   beforeEach(async () => {
+    console.log(process.env.NODE_ENV, process.env.DATABASE_URL);
+
     app = createApi();
 
     // Create a test user

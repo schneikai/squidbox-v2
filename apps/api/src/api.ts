@@ -1,8 +1,6 @@
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
-
-import './env'; // Load environment variables
 import { logger } from './logger';
 import routes from './routes';
 import healthRoutes from './routes/health';

@@ -1,3 +1,4 @@
+import '../../test/setup';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApi } from '../api';

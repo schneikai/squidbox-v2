@@ -1,8 +1,9 @@
+import '../../test/setup';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApi } from '../api';
 import { getPrisma } from '../prisma';
-import { authenticateUser, createUser, authHeader } from '../../tests/utils';
+import { authenticateUser, createUser, authHeader } from '../../test/utils';
 
 const app = createApi();
 

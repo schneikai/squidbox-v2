@@ -8,6 +8,6 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist", "generated"]
 }

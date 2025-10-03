@@ -1,8 +1,9 @@
+import '../../test/setup';
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 import { createApi } from '../api';
 import { getPrisma } from '../prisma';
-import { authenticateUser, createUser, authHeader } from '../../tests/utils';
+import { authenticateUser, createUser, authHeader } from '../../test/utils';
 
 const app = createApi();
 
@@ -151,11 +152,11 @@ describe('POST /api/posts/group/:groupId/retry', () => {
     const mockDownloadJob = {
       data: { groupId },
       remove: vi.fn().mockResolvedValue(undefined),
-    };
+    } as any;
     const mockPostingJob = {
       data: { postId: 'post-1' },
       remove: vi.fn().mockResolvedValue(undefined),
-    };
+    } as any;
 
     // Mock getJobs to return existing jobs
     vi.spyOn(downloadQueue, 'getJobs').mockResolvedValue([mockDownloadJob]);

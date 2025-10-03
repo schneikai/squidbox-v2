@@ -1,10 +1,11 @@
+import '../../../test/setup';
 import request from 'supertest';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 import { Platform } from '@prisma/client';
 import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { createApi } from '../../api';
-import { authenticateUser, createUser, authHeader } from '../../../tests/utils';
+import { authenticateUser, createUser, authHeader } from '../../../test/utils';
 import { getPrisma } from '../../prisma';
 
 

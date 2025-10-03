@@ -1,3 +1,4 @@
+import '../../test/setup';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { startDownloadWorker } from './downloadWorker';
 import { getPrisma } from '../prisma';

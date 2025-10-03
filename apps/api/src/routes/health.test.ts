@@ -1,3 +1,4 @@
+import '../../test/setup';
 import request from 'supertest';
 import { describe, it, expect } from 'vitest';
 

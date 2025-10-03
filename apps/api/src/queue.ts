@@ -1,6 +1,5 @@
 import { Queue, Worker, FlowProducer, QueueEvents, type Processor } from 'bullmq';
 import IORedis from 'ioredis';
-import './env'; // Load environment variables
 import { logger } from './logger';
 
 // Redis connection
