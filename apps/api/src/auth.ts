@@ -1,10 +1,10 @@
 import bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
-import jwt, { Secret } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-import { env } from './env';
+import './env'; // Load environment variables
 import { logger } from './logger';
-import { prisma } from './prisma';
+import { getPrisma } from './prisma';
 
 type JwtPayload = {
   userId: string;
@@ -16,13 +16,19 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export function signJwt(payload: JwtPayload) {
-  return jwt.sign(payload, env.JWT_SECRET as Secret, {
-    expiresIn: env.JWT_EXPIRES_IN as unknown as any,
-  });
+  const options: jwt.SignOptions = {};
+  
+  if (process.env.JWT_EXPIRES_IN) {
+    options.expiresIn = isNaN(Number(process.env.JWT_EXPIRES_IN))
+      ? process.env.JWT_EXPIRES_IN as any // TODO: correct type would be StringValue
+      : Number(process.env.JWT_EXPIRES_IN);
+  }
+  
+  return jwt.sign(payload, process.env.JWT_SECRET as jwt.Secret, options);
 }
 
 function verifyJwt(token: string) {
-  return jwt.verify(token, env.JWT_SECRET as Secret) as JwtPayload;
+  return jwt.verify(token, process.env.JWT_SECRET as jwt.Secret) as JwtPayload;
 }
 
 export async function hashPassword(password: string) {
@@ -50,7 +56,7 @@ async function requireAuthorization(
     const payload = verifyJwt(token);
 
     // Verify user exists in database
-    const user = await prisma.user.findUnique({
+    const user = await getPrisma().user.findUnique({
       where: { id: payload.userId },
       select: { id: true, email: true },
     });

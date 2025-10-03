@@ -2,7 +2,7 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 
-import { env } from './env';
+import './env'; // Load environment variables
 import { logger } from './logger';
 import routes from './routes';
 import healthRoutes from './routes/health';
@@ -23,8 +23,8 @@ export function createApi() {
 export async function startApi() {
   const app = createApi();
   await new Promise<void>((resolve) => {
-    app.listen(Number(env.PORT), () => {
-      logger.info({ port: env.PORT }, 'API listening');
+    app.listen(Number(process.env.PORT || '3000'), () => {
+      logger.info({ port: process.env.PORT || '3000' }, 'API listening');
       resolve();
     });
   });

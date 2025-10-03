@@ -1,4 +1,4 @@
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { logger } from '../logger';
 import { downloadMediaFile } from './downloadMediaFile';
 
@@ -6,7 +6,7 @@ import { downloadMediaFile } from './downloadMediaFile';
  * Helper function to download media and update database
  */
 export async function downloadMedia(mediaId: string, url: string): Promise<string | null> {
-  const existingMedia = await prisma.media.findUnique({
+  const existingMedia = await getPrisma().media.findUnique({
     where: { id: mediaId },
     include: { downloadResult: true },
   });
@@ -15,7 +15,7 @@ export async function downloadMedia(mediaId: string, url: string): Promise<strin
     return existingMedia.localPath;
   }
   
-    const downloadResult = await prisma.mediaDownloadResult.upsert({
+    const downloadResult = await getPrisma().mediaDownloadResult.upsert({
       where: { mediaId },
       update: {
         status: 'working',
@@ -32,14 +32,14 @@ export async function downloadMedia(mediaId: string, url: string): Promise<strin
   try {
     const localPath = await downloadMediaFile(url, mediaId);
     
-    await prisma.media.update({
+    await getPrisma().media.update({
       where: { id: mediaId },
       data: {
         localPath,
       },
     });
     
-    await prisma.mediaDownloadResult.update({
+    await getPrisma().mediaDownloadResult.update({
       where: { id: downloadResult.id },
       data: {
         status: 'success',
@@ -54,7 +54,7 @@ export async function downloadMedia(mediaId: string, url: string): Promise<strin
   } catch (error) {
     logger.error({ err: error, mediaId, url }, 'Failed to download media');
     
-    await prisma.mediaDownloadResult.upsert({
+    await getPrisma().mediaDownloadResult.upsert({
       where: { mediaId },
       update: {
         status: 'failed',

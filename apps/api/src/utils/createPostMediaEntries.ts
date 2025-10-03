@@ -1,4 +1,4 @@
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { Media } from '@squidbox/contracts';
 
 /**
@@ -13,7 +13,7 @@ export async function createPostMediaEntries(postId: string, mediaItems: Media[]
     if (!mediaItem) continue;
     
     // Create or find the media item
-    const media = await prisma.media.upsert({
+    const media = await getPrisma().media.upsert({
       where: { url: mediaItem.url },
       update: {},
       create: {
@@ -23,7 +23,7 @@ export async function createPostMediaEntries(postId: string, mediaItems: Media[]
     });
     
     // Create the post-media link (idempotent per postId+mediaId)
-    const postMedia = await prisma.postMedia.upsert({
+    const postMedia = await getPrisma().postMedia.upsert({
       where: { postId_mediaId: { postId, mediaId: media.id } },
       update: {},
       create: {

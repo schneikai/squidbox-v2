@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { CreatePostRequest, CreatePostResponse, PostResult, PlatformPost, GroupStatusResponse, RetryResponse } from '@squidbox/contracts';
-import { prisma } from '../prisma.js';
+import { getPrisma } from '../prisma.js';
 import { logger } from '../logger.js';
 import { authenticateToken, AuthenticatedRequest } from '../auth.js';
 import { createPostMediaEntries } from '../utils/createPostMediaEntries';
@@ -47,7 +47,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   const createdPosts = [];
   for (const platformPost of platformPosts) {
     // Create a separate Post record for each platform
-    const dbPost = await prisma.post.create({
+    const dbPost = await getPrisma().post.create({
       data: {
         userId: req.user!.id,
         platform: platformPost.platform,
@@ -90,14 +90,14 @@ router.get('/group/:groupId/status', authenticateToken, async (req: Authenticate
   const { groupId } = req.params;
 
   // Verify the user has access to this group
-  const post = await prisma.post.findFirst({ 
+  const post = await getPrisma().post.findFirst({ 
     where: { groupId, userId: req.user!.id },
     select: { id: true }
   });
   if (!post) return res.status(404).json({ error: 'Post group not found' });
 
   // Get all posts in the group
-  const groupPosts = await prisma.post.findMany({
+  const groupPosts = await getPrisma().post.findMany({
     where: { groupId },
     include: {
       postResults: true,
@@ -191,14 +191,14 @@ router.post('/group/:groupId/retry', authenticateToken, async (req: Authenticate
   const { groupId } = req.params;
 
   // Verify the user has access to this group
-  const post = await prisma.post.findFirst({ 
+  const post = await getPrisma().post.findFirst({ 
     where: { groupId, userId: req.user!.id },
     select: { id: true }
   });
   if (!post) return res.status(404).json({ error: 'Post group not found' });
 
   // Get all failed posts in the group
-  const failedPosts = await prisma.post.findMany({
+  const failedPosts = await getPrisma().post.findMany({
     where: { 
       groupId,
       status: 'failed'
@@ -229,13 +229,13 @@ router.post('/group/:groupId/retry', authenticateToken, async (req: Authenticate
   }
 
   // Reset all posts in the group to pending
-  await prisma.post.updateMany({
+  await getPrisma().post.updateMany({
     where: { groupId },
     data: { status: 'pending' },
   });
 
   // Clear existing post results for retry
-  await prisma.postResult.deleteMany({
+  await getPrisma().postResult.deleteMany({
     where: {
       postId: {
         in: failedPosts.map(p => p.id)

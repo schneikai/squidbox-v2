@@ -1,10 +1,10 @@
 import { Queue, Worker, FlowProducer, QueueEvents, type Processor } from 'bullmq';
 import IORedis from 'ioredis';
-import { env } from './env';
+import './env'; // Load environment variables
 import { logger } from './logger';
 
 // Redis connection
-export const connection = new IORedis(env.REDIS_URL ?? 'redis://localhost:6379', {
+export const connection = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
   // BullMQ requires this to be null for blocking commands used by QueueEvents/Workers
   maxRetriesPerRequest: null,
 });

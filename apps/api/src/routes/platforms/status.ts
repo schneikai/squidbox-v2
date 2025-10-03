@@ -3,7 +3,7 @@ import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 
 import { authenticateToken, AuthenticatedRequest } from '../../auth';
 import { logger } from '../../logger';
-import { prisma } from '../../prisma';
+import { getPrisma } from '../../prisma';
 
 const router = Router();
 
@@ -12,7 +12,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   logger.info({ userId: req.user!.id }, 'Checking platform connection status');
 
   // Get OAuth tokens
-  const oauthTokens = await prisma.oAuthToken.findMany({
+  const oauthTokens = await getPrisma().oAuthToken.findMany({
     where: {
       userId: req.user!.id,
     },
@@ -24,7 +24,7 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   });
 
   // Get platform credentials
-  const platformCredentials = await prisma.platformCredentials.findMany({
+  const platformCredentials = await getPrisma().platformCredentials.findMany({
     where: {
       userId: req.user!.id,
     },

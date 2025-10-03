@@ -1,11 +1,11 @@
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { downloadMedia } from './downloadMedia';
 
 /**
  * Helper function to download all media for a post
  */
 export async function downloadPostMedia(postId: string) {
-  const postMedia = await prisma.postMedia.findMany({
+  const postMedia = await getPrisma().postMedia.findMany({
     where: { postId },
     include: { media: true },
     orderBy: { order: 'asc' },

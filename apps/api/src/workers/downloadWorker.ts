@@ -1,5 +1,5 @@
 import { createWorker, QUEUE_NAMES, twitterQueue } from '../queue';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { downloadMedia } from '../utils/downloadMedia';
 import { existsSync } from 'fs';
 
@@ -9,7 +9,7 @@ export function startDownloadWorker() {
     await job.updateProgress({ phase: 'starting', groupId, retryOnly });
 
     // Get all posts in this group
-    const posts = await prisma.post.findMany({
+    const posts = await getPrisma().post.findMany({
       where: { 
         groupId,
         ...(retryOnly ? { status: 'failed' } : {})
@@ -91,14 +91,14 @@ export function startDownloadWorker() {
         });
       } else {
         // For non-implemented platforms, create a failed result
-        await prisma.postResult.create({
+        await getPrisma().postResult.create({
           data: {
             postId: post.id,
             status: 'failed',
             statusText: `${post.platform} posting not yet implemented`,
           },
         });
-        await prisma.post.update({
+        await getPrisma().post.update({
           where: { id: post.id },
           data: { status: 'failed' },
         });

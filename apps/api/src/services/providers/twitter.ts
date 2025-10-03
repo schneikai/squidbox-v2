@@ -1,6 +1,6 @@
 import { createTweet, uploadMedia } from '@squidbox/twitter-api';
 import { type PostResult, type PlatformPost } from '@squidbox/contracts';
-import { prisma } from '../../prisma.js';
+import { getPrisma } from '../../prisma.js';
 import { logger } from '../../logger.js';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -10,7 +10,7 @@ import type { Media } from '@prisma/client';
  * Check if user has valid Twitter authentication
  */
 export async function isConnected(userId: string): Promise<boolean> {
-  const tokens = await prisma.oAuthToken.findUnique({
+  const tokens = await getPrisma().oAuthToken.findUnique({
     where: {
       userId_platform: {
         userId,
@@ -36,7 +36,7 @@ export async function isConnected(userId: string): Promise<boolean> {
  */
 export async function post(userId: string, platformPost: PlatformPost): Promise<PostResult> {
   // Get user's Twitter tokens
-  const tokens = await prisma.oAuthToken.findUnique({
+  const tokens = await getPrisma().oAuthToken.findUnique({
     where: {
       userId_platform: {
         userId,
@@ -69,7 +69,7 @@ export async function post(userId: string, platformPost: PlatformPost): Promise<
 
       // Look up media record for localPath
       const dbMedia = mediaItem.id
-        ? await prisma.media.findUnique({ where: { id: mediaItem.id } })
+        ? await getPrisma().media.findUnique({ where: { id: mediaItem.id } })
         : null;
 
       const localPath = dbMedia?.localPath;

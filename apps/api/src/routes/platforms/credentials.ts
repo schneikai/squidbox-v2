@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 
 import { authenticateToken, AuthenticatedRequest } from '../../auth';
 import { logger } from '../../logger';
-import { prisma } from '../../prisma';
+import { getPrisma } from '../../prisma';
 
 const router = Router();
 
@@ -47,7 +47,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   }, 'Storing credentials in database');
 
   // Upsert platform credentials (update if exists, create if not)
-  const result = await prisma.platformCredentials.upsert({
+  const result = await getPrisma().platformCredentials.upsert({
     where: {
       userId_platform: {
         userId: req.user!.id,
@@ -94,7 +94,7 @@ router.get('/:platform', authenticateToken, async (req: AuthenticatedRequest, re
     return res.status(400).json({ error: 'Invalid platform parameter' });
   }
 
-  const credentials = await prisma.platformCredentials.findUnique({
+  const credentials = await getPrisma().platformCredentials.findUnique({
     where: {
       userId_platform: {
         userId: req.user!.id,
@@ -136,7 +136,7 @@ router.delete('/:platform', authenticateToken, async (req: AuthenticatedRequest,
   logger.info({ userId: req.user!.id, platform }, 'Deleting platform credentials');
 
   try {
-    const result = await prisma.platformCredentials.deleteMany({
+    const result = await getPrisma().platformCredentials.deleteMany({
       where: {
         userId: req.user!.id,
         platform: platform as Platform,

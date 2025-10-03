@@ -1,5 +1,5 @@
 import express from 'express';
-import { env } from './env';
+import './env'; // Load environment variables
 import { logger } from './logger';
 import { startDownloadWorker } from './workers/downloadWorker';
 import { startTwitterWorker } from './workers/twitterWorker';
@@ -23,8 +23,8 @@ export async function startWorker() {
   startTwitterWorker();
 
   await new Promise<void>((resolve) => {
-    app.listen(Number(env.WORKER_PORT), () => {
-      logger.info({ port: env.WORKER_PORT }, 'Worker listening');
+    app.listen(Number(process.env.WORKER_PORT || '3001'), () => {
+      logger.info({ port: process.env.WORKER_PORT || '3001' }, 'Worker listening');
       resolve();
     });
   });

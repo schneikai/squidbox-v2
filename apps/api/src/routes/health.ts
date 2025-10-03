@@ -1,14 +1,14 @@
 import { Router } from 'express';
 
 import { logger } from '../logger';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 
 const router = Router();
 
 router.get('/', async (_req, res) => {
   try {
     // Test database connection
-    await prisma.$queryRaw`SELECT 1`;
+    await getPrisma().$queryRaw`SELECT 1`;
     res.json({
       ok: true,
       database: 'connected',

@@ -1,5 +1,5 @@
 import { createWorker, QUEUE_NAMES } from '../queue';
-import { prisma } from '../prisma';
+import { getPrisma } from '../prisma';
 import { postToPlatform } from '../services/platformService';
 
 export function startTwitterWorker() {
@@ -7,7 +7,7 @@ export function startTwitterWorker() {
     const { userId, postId, text } = job.data;
     await job.updateProgress({ phase: 'login' });
 
-    const postWithMedia = await prisma.post.findUnique({
+    const postWithMedia = await getPrisma().post.findUnique({
       where: { id: postId },
       include: {
         postMedia: {
@@ -31,7 +31,7 @@ export function startTwitterWorker() {
       post: { text, media },
     });
 
-    await prisma.postResult.upsert({
+    await getPrisma().postResult.upsert({
       where: { postId },
       update: {
         status: result.success ? 'success' : 'failed',
@@ -46,7 +46,7 @@ export function startTwitterWorker() {
       },
     });
 
-    await prisma.post.update({
+    await getPrisma().post.update({
       where: { id: postId },
       data: { status: result.success ? 'success' : 'failed' },
     });

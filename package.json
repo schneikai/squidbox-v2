@@ -25,6 +25,7 @@
   },
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:up": "pnpm -C apps/api dev:up",
     "dev:down": "pnpm -C apps/api dev:down",
 
     "dev:setup": "pnpm -C apps/api dev:setup",

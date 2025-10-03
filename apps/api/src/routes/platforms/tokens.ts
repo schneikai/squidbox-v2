@@ -4,7 +4,7 @@ import { Platform } from '@prisma/client';
 
 import { authenticateToken, AuthenticatedRequest } from '../../auth';
 import { logger } from '../../logger';
-import { prisma } from '../../prisma';
+import { getPrisma } from '../../prisma';
 
 const router = Router();
 
@@ -50,7 +50,7 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   }, 'Storing tokens in database');
 
   // Upsert OAuth tokens (update if exists, create if not)
-  const result = await prisma.oAuthToken.upsert({
+  const result = await getPrisma().oAuthToken.upsert({
     where: {
       userId_platform: {
         userId: req.user!.id,
@@ -103,7 +103,7 @@ router.get('/:platform', authenticateToken, async (req: AuthenticatedRequest, re
     return res.status(400).json({ error: 'Invalid platform parameter' });
   }
 
-  const token = await prisma.oAuthToken.findUnique({
+  const token = await getPrisma().oAuthToken.findUnique({
     where: {
       userId_platform: {
         userId: req.user!.id,
@@ -146,7 +146,7 @@ router.delete('/:platform', authenticateToken, async (req: AuthenticatedRequest,
   logger.info({ userId: req.user!.id, platform }, 'Deleting platform tokens');
 
   try {
-    const result = await prisma.oAuthToken.deleteMany({
+    const result = await getPrisma().oAuthToken.deleteMany({
       where: {
         userId: req.user!.id,
         platform: platform as Platform,
