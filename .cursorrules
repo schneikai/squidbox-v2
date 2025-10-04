@@ -29,7 +29,7 @@ Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma
 
 <!-- Add rules about tone, style, naming, project-wide patterns -->
 
-- Run `nvm use` in the project root before starting work to ensure the correct Node version.
+- Always run `nvm use` first before starting a new terminal session to ensure the correct Node version
 - Use pnpm instead of npm for package management commands.
 - Add comments when business logic needs additional explanation, not just restate the code
 - Leave debug console.log statements added during active development and ignore the linter warnings - these are temporary and will be cleaned up when development is complete
@@ -64,3 +64,8 @@ Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma
 ## Testing
 
 <!-- Add rules for Jest, Cypress, selectors, intercepts -->
+
+- to run all tests in the monorepo, use: `cd /Users/kai/Development/squidbox-v2 && nvm use && pnpm test`
+- to run all tests in a specific package, use: `cd /Users/kai/Development/squidbox-v2/apps/api && nvm use && pnpm test`
+- to run a single test, use: `cd /Users/kai/Development/squidbox-v2/apps/api && nvm use && pnpm test test/filename.test.ts`
+- Always import `apps/api/test/setup.ts` FIRST in all test files in the api package to ensure proper setup of the test environment

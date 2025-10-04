@@ -5,10 +5,9 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "pnpm dev:up && tsx watch src/index.ts",
-    "dev:setup": "pnpm dev:up && pnpm dev:db && pnpm dev:seed",
+    "dev:setup": "pnpm dev:up && pnpm dev:db:migrate && pnpm dev:seed",
     "dev:up": "docker compose up -d db redis",
     "dev:down": "docker compose down -v --remove-orphans",
-    "dev:db": "prisma migrate dev",
     "dev:db:migrate": "prisma migrate dev",
     "dev:db:reset": "prisma migrate reset",
     "dev:seed": "tsx prisma/seed.ts",

@@ -11,8 +11,6 @@ describe('Platform Routes - GET /status', () => {
   let validToken: string;
 
   beforeEach(async () => {
-    console.log(process.env.NODE_ENV, process.env.DATABASE_URL);
-
     app = createApi();
 
     // Create a test user
