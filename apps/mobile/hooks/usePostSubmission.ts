@@ -1,6 +1,6 @@
 import { createPost, type CreatePostRequest, type CreatePostResponse } from '@/services/backend';
 import type { ApiError } from '@/services/http';
-import type { PostGroup } from '@squidbox/contracts';
+import type { PostGroup } from '@/types';
 import { useCallback, useState } from 'react';
 
 type PostSubmissionState = Readonly<{

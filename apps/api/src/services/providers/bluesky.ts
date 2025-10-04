@@ -1,4 +1,5 @@
-import { type PostResult, type PlatformPost } from '@squidbox/contracts';
+import { type PlatformResult } from '@squidbox/contracts';
+import { type PlatformPost } from '../../types.js';
 import { logger } from '../../logger.js';
 
 /**
@@ -20,7 +21,7 @@ export async function isConnected(userId: string): Promise<boolean> {
  * Post content to Bluesky
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function post(userId: string, platformPost: PlatformPost): Promise<PostResult> {
+export async function post(userId: string, platformPost: PlatformPost): Promise<PlatformResult> {
   try {
     // TODO: Implement actual Bluesky posting
     logger.warn('Bluesky posting not yet implemented');

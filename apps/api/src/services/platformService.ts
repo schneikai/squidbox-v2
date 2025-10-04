@@ -1,4 +1,5 @@
-import { type Platform, type PostResult, type PlatformPost } from '@squidbox/contracts';
+import { type Platform, type PlatformResult } from '@squidbox/contracts';
+import { type PlatformPost } from '../types.js';
 import { logger } from '../logger.js';
 import * as twitterProvider from './providers/twitter.js';
 import * as blueskyProvider from './providers/bluesky.js';
@@ -18,7 +19,7 @@ const platformProviders: Record<Platform, any> = {
 export async function postToPlatform(
   userId: string,
   platformPost: PlatformPost
-): Promise<PostResult> {
+): Promise<PlatformResult> {
   logger.info({ userId, platform: platformPost.platform }, 'Starting platform post');
   const provider = getProvider(platformPost.platform);
   const result = await provider.post(userId, platformPost);

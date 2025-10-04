@@ -3,7 +3,9 @@ import CustomizeDialog from '@/components/molecules/CustomizeDialog';
 import PlatformSelectorDialog from '@/components/molecules/PlatformSelectorDialog';
 import SplitButton, { SplitButtonAction } from '@/components/molecules/SplitButton';
 import PostComposer from '@/components/organisms/PostComposer';
-import type { Platform , PlatformComposerData, Media } from '@squidbox/contracts';
+import type { Platform } from '@squidbox/contracts';
+import type { MediaInput } from '@/types';
+import type { PostGroup } from '@/types';
 import { usePlatformContext } from '@/contexts/PlatformContext';
 import { TabView } from '@rneui/themed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,7 +24,7 @@ type MediaWithId = Readonly<{
   id: string; // Local identifier for React keys (frontend only)
   uri: string; // Local file URI (frontend only)
 }> &
-  Media;
+  MediaInput;
 
 type PostWithId = Readonly<{
   text: string;
@@ -31,8 +33,8 @@ type PostWithId = Readonly<{
 
 type PlatformComposerProps = Readonly<{
   userAvatarUri?: string;
-  initialData?: PlatformComposerData;
-  onDataChange?: (data: PlatformComposerData) => void;
+  initialData?: { postGroups: readonly PostGroup[] };
+  onDataChange?: (data: { postGroups: readonly PostGroup[] }) => void;
 }>;
 
 export function PlatformComposer({

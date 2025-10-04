@@ -1,6 +1,6 @@
 import Button from '@/components/atoms/Button';
 import { PlatformComposer } from '@/components/organisms/PlatformComposer';
-import type { PlatformComposerData, PostGroup } from '@squidbox/contracts';
+import type { PostGroup } from '@/types';
 import { useCallback, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ export default function ComposeTemplate({ userAvatarUri, onPost }: ComposeTempla
   const insets = useSafeAreaInsets();
   const [postGroups, setPostGroups] = useState<readonly PostGroup[]>([]);
 
-  const handleDataChange = useCallback((data: PlatformComposerData) => {
+  const handleDataChange = useCallback((data: { postGroups: readonly PostGroup[] }) => {
     setPostGroups(data.postGroups);
   }, []);
 

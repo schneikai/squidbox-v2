@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { OAuthTokensCreate, SUPPORTED_PLATFORMS } from '@squidbox/contracts';
+import { OAuthTokensCreateRequest } from '@squidbox/contracts';
+import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { Platform } from '@prisma/client';
 
 import { authenticateToken, AuthenticatedRequest } from '../../auth';
@@ -9,7 +10,7 @@ import { getPrisma } from '../../prisma';
 const router = Router();
 
 // Store OAuth tokens endpoint
-const tokensSchema = OAuthTokensCreate;
+const tokensSchema = OAuthTokensCreateRequest;
 
 router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   logger.info({ userId: req.user!.id, body: req.body }, 'Received token storage request');

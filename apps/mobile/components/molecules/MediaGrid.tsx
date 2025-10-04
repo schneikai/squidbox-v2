@@ -1,12 +1,12 @@
 import MediaThumbnail from '@/components/atoms/MediaThumbnail';
-import type { Media } from '@squidbox/contracts';
+import type { MediaInput } from '@/types';
 import React from 'react';
 import { ScrollView } from 'react-native';
 
 type MediaWithId = Readonly<{
   id: string;
   uri: string;
-}> & Media;
+}> & MediaInput;
 
 type MediaGridProps = Readonly<{
   media: readonly MediaWithId[];

@@ -34,6 +34,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="posts"
+        options={{
+          title: 'Posts',
+          tabBarIcon: ({ color }) => (
+            <Icon name="list" type="feather" size={20} color={color as any} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="platforms"
         options={{
           title: 'Platforms',

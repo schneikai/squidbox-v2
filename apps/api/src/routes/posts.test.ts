@@ -375,8 +375,8 @@ describe('POST /api/posts', () => {
     });
 
     expect(posts).toHaveLength(2);
-    expect(posts[0].groupId).toBe(posts[1].groupId);
-    expect(posts[0].platform).toBe('twitter');
-    expect(posts[1].platform).toBe('bluesky');
+    expect(posts[0]?.groupId).toBe(posts[1]?.groupId);
+    expect(posts[0]?.platform).toBe('twitter');
+    expect(posts[1]?.platform).toBe('bluesky');
   });
 });

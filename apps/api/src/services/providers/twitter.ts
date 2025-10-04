@@ -1,5 +1,6 @@
 import { createTweet, uploadMedia } from '@squidbox/twitter-api';
-import { type PostResult, type PlatformPost } from '@squidbox/contracts';
+import { type PlatformResult } from '@squidbox/contracts';
+import { type PlatformPost } from '../../types.js';
 import { getPrisma } from '../../prisma.js';
 import { logger } from '../../logger.js';
 import { promises as fs } from 'fs';
@@ -34,7 +35,7 @@ export async function isConnected(userId: string): Promise<boolean> {
 /**
  * Post content to Twitter
  */
-export async function post(userId: string, platformPost: PlatformPost): Promise<PostResult> {
+export async function post(userId: string, platformPost: PlatformPost): Promise<PlatformResult> {
   // Get user's Twitter tokens
   const tokens = await getPrisma().oAuthToken.findUnique({
     where: {

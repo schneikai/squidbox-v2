@@ -8,7 +8,7 @@ import Button from '@/components/atoms/Button';
 import Icon from '@/components/atoms/Icon';
 import { Input, Text } from '@rneui/themed';
 import { storePlatformCredentials } from '@/services/backend';
-import type { PlatformCredentialsCreate } from '@squidbox/contracts';
+import type { PlatformCredentialsCreateRequest } from '@squidbox/contracts';
 
 interface OnlyFansCredentials {
   username: string;
@@ -63,7 +63,7 @@ export default function OnlyFansAuthPage() {
       });
       
       // Store credentials in backend
-      const credentialsData: PlatformCredentialsCreate = {
+      const credentialsData: PlatformCredentialsCreateRequest = {
         platform: 'onlyfans',
         username: credentials.username,
         password: credentials.password,

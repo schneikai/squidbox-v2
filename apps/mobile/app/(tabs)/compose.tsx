@@ -1,6 +1,6 @@
 import ComposeTemplate from '@/components/templates/ComposeTemplate';
 import { usePostSubmission } from '@/hooks/usePostSubmission';
-import type { PostGroup } from '@squidbox/contracts';
+import type { PostGroup } from '@/types';
 import React, { useCallback } from 'react';
 import { Alert } from 'react-native';
 

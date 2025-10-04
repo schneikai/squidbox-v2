@@ -3,7 +3,7 @@ import IconButton from '@/components/atoms/IconButton';
 import MediaGrid from '@/components/molecules/MediaGrid';
 import PostComposeToolbar from '@/components/molecules/PostComposeToolbar';
 import PostTextInput from '@/components/molecules/PostTextInput';
-import type { Media } from '@squidbox/contracts';
+import type { MediaInput } from '@/types';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
@@ -12,7 +12,7 @@ type MediaWithId = Readonly<{
   id: string; // Local identifier for React keys (frontend only)
   uri: string; // Local file URI (frontend only)
 }> &
-  Media;
+  MediaInput;
 
 type PostWithId = Readonly<{
   text: string;

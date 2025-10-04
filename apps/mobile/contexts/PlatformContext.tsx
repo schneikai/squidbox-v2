@@ -1,5 +1,6 @@
 import { getPlatformStatuses } from '@/utils/platformService';
-import { Platform, PLATFORM_CONFIGS, SUPPORTED_PLATFORMS, type PlatformConfig } from '@squidbox/contracts';
+import { Platform } from '@squidbox/contracts';
+import { PLATFORM_CONFIGS, SUPPORTED_PLATFORMS, type PlatformConfig } from '@squidbox/contracts';
 import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 
 type PlatformContextType = Readonly<{

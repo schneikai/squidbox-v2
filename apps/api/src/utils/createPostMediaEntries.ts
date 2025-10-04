@@ -1,10 +1,10 @@
 import { getPrisma } from '../prisma';
-import { Media } from '@squidbox/contracts';
+import { PlatformPost } from '../types.js';
 
 /**
  * Helper function to create or find media items and link them to a post (without downloading)
  */
-export async function createPostMediaEntries(postId: string, mediaItems: Media[]) {
+export async function createPostMediaEntries(postId: string, mediaItems: PlatformPost['post']['media']) {
   const postMediaLinks = [];
   
   for (let i = 0; i < mediaItems.length; i++) {

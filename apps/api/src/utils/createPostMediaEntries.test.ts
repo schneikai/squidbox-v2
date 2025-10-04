@@ -33,8 +33,8 @@ describe('createPostMediaEntries', () => {
 
     const links = await getPrisma().postMedia.findMany({ where: { postId }, orderBy: { order: 'asc' } });
     expect(links).toHaveLength(2);
-    expect(links[0].order).toBe(0);
-    expect(links[1].order).toBe(1);
+    expect(links[0]?.order).toBe(0);
+    expect(links[1]?.order).toBe(1);
 
     const media = await getPrisma().media.findMany({ where: { url: { in: mediaItems.map(m => m.url) } } });
     expect(media).toHaveLength(2);
@@ -44,14 +44,14 @@ describe('createPostMediaEntries', () => {
     const first = await createPostMediaEntries(postId, [
       { type: 'image', url: 'https://example.com/c.jpg' },
     ] as any);
-    const mediaId = first[0].media.id;
+    const mediaId = first[0]?.media.id;
 
     // Call again with same URL
     const second = await createPostMediaEntries(postId, [
       { type: 'image', url: 'https://example.com/c.jpg' },
     ] as any);
 
-    expect(second[0].media.id).toBe(mediaId);
+    expect(second[0]?.media.id).toBe(mediaId);
   });
 });
 

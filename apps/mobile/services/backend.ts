@@ -1,16 +1,18 @@
 import type { 
-  OAuthTokensCreate, 
-  PlatformCredentialsCreate,
+  OAuthTokensCreateRequest, 
+  PlatformCredentialsCreateRequest,
   PlatformCredentialsResponse,
   CreatePostRequest, 
-  CreatePostResponse
+  CreatePostResponse,
+  PostsListResponse,
+  PostDetailResponse
 } from '@squidbox/contracts';
-export type { CreatePostRequest, CreatePostResponse } from '@squidbox/contracts';
+export type { CreatePostRequest, CreatePostResponse, PostsListResponse, PostDetailResponse } from '@squidbox/contracts';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { httpGet, httpPost, httpDelete, type ApiResponse } from './http';
 
-type AuthTokensRequest = OAuthTokensCreate;
+type AuthTokensRequest = OAuthTokensCreateRequest;
 
 type AuthTokensResponse = Readonly<{
   success: boolean;
@@ -135,7 +137,7 @@ export const createPost = async (
   postData: CreatePostRequest,
 ): Promise<ApiResponse<CreatePostResponse>> => {
   const headers = await getAuthHeaders();
-  return httpPost<CreatePostResponse>(getBackendUrl('/api/post'), postData, headers);
+  return httpPost<CreatePostResponse>(getBackendUrl('/api/posts'), postData, headers);
 };
 
 /**
@@ -178,7 +180,7 @@ export const disconnectPlatform = async (platform: string): Promise<ApiResponse<
  * Store platform credentials for a platform (OnlyFans, etc.)
  */
 export const storePlatformCredentials = async (
-  credentials: PlatformCredentialsCreate,
+  credentials: PlatformCredentialsCreateRequest,
 ): Promise<ApiResponse<{
   success: boolean;
   message: string;
@@ -220,6 +222,26 @@ export const deletePlatformCredentials = async (platform: string): Promise<ApiRe
     success: boolean;
     message: string;
   }>(getBackendUrl(`/api/platforms/credentials/${platform}`), headers);
+};
+
+// ============================================================================
+// POSTS FUNCTIONS
+// ============================================================================
+
+/**
+ * Get all posts for the authenticated user
+ */
+export const getPosts = async (page: number = 1, limit: number = 20): Promise<ApiResponse<PostsListResponse>> => {
+  const headers = await getAuthHeaders();
+  return httpGet<PostsListResponse>(getBackendUrl(`/api/posts?page=${page}&limit=${limit}`), headers);
+};
+
+/**
+ * Get a specific post by ID
+ */
+export const getPost = async (postId: string): Promise<ApiResponse<PostDetailResponse>> => {
+  const headers = await getAuthHeaders();
+  return httpGet<PostDetailResponse>(getBackendUrl(`/api/posts/${postId}`), headers);
 };
 
 

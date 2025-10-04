@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { CreatePostRequest, CreatePostResponse, PostResult, PlatformPost, GroupStatusResponse, RetryResponse } from '@squidbox/contracts';
+import { CreatePostRequest, CreatePostResponse, PostsListResponse, PostDetailResponse } from '@squidbox/contracts';
+import { PlatformPost } from '../types.js';
 import { getPrisma } from '../prisma.js';
 import { logger } from '../logger.js';
 import { authenticateToken, AuthenticatedRequest } from '../auth.js';
@@ -176,7 +177,7 @@ router.get('/group/:groupId/status', authenticateToken, async (req: Authenticate
     groupStatus = 'working';
   }
 
-  const response: GroupStatusResponse = {
+  const response = {
     groupId: groupId || '',
     status: groupStatus,
     posts,
@@ -250,12 +251,165 @@ router.post('/group/:groupId/retry', authenticateToken, async (req: Authenticate
     backoff: { type: 'fixed', delay: 1000 },
   });
 
-  const response: RetryResponse = { 
+  const response = { 
     ok: true, 
     retriedCount: failedPosts.length,
     groupId: groupId || ''
   };
   res.json(response);
+});
+
+/**
+ * Get all posts for the authenticated user
+ */
+router.get('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  const { page = '1', limit = '20' } = req.query;
+  const pageNum = parseInt(page as string, 10);
+  const limitNum = parseInt(limit as string, 10);
+  const offset = (pageNum - 1) * limitNum;
+
+  try {
+    // Get posts with their media and results
+    const posts = await getPrisma().post.findMany({
+      where: { userId: req.user!.id },
+      include: {
+        postMedia: {
+          include: {
+            media: {
+              include: {
+                downloadResult: true
+              }
+            }
+          }
+        },
+        postResults: {
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limitNum
+    });
+
+    // Get total count for pagination
+    const totalCount = await getPrisma().post.count({
+      where: { userId: req.user!.id }
+    });
+
+    // Transform the data for the response
+    const transformedPosts = posts.map(post => {
+      const latestResult = post.postResults[0];
+      const mediaItems = post.postMedia.map(pm => ({
+        id: pm.media.id,
+        type: pm.media.type,
+        url: pm.media.url,
+        localPath: pm.media.localPath,
+        downloadStatus: pm.media.downloadResult?.status || 'pending',
+        downloadError: pm.media.downloadResult?.statusText || null
+      }));
+
+      return {
+        id: post.id,
+        platform: post.platform,
+        text: post.text,
+        status: post.status,
+        groupId: post.groupId,
+        createdAt: post.createdAt.toISOString(),
+        updatedAt: post.updatedAt.toISOString(),
+        media: mediaItems,
+        postResult: latestResult ? {
+          id: latestResult.id,
+          status: latestResult.status,
+          statusText: latestResult.statusText,
+          platformPostId: latestResult.platformPostId,
+          createdAt: latestResult.createdAt.toISOString()
+        } : null
+      };
+    });
+
+    res.json({
+      posts: transformedPosts,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum)
+      }
+    });
+  } catch (error) {
+    logger.error({ error, userId: req.user!.id }, 'Failed to fetch posts');
+    res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+/**
+ * Get a specific post by ID
+ */
+router.get('/:postId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+  const { postId } = req.params;
+
+  try {
+    const post = await getPrisma().post.findFirst({
+      where: { 
+        id: postId,
+        userId: req.user!.id 
+      },
+      include: {
+        postMedia: {
+          include: {
+            media: {
+              include: {
+                downloadResult: true
+              }
+            }
+          }
+        },
+        postResults: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    // Transform the data for the response
+    const mediaItems = post.postMedia.map(pm => ({
+      id: pm.media.id,
+      type: pm.media.type,
+      url: pm.media.url,
+      localPath: pm.media.localPath,
+      downloadStatus: pm.media.downloadResult?.status || 'pending',
+      downloadError: pm.media.downloadResult?.statusText || null
+    }));
+
+    const postResults = post.postResults.map(result => ({
+      id: result.id,
+      status: result.status,
+      statusText: result.statusText,
+      platformPostId: result.platformPostId,
+      createdAt: result.createdAt.toISOString()
+    }));
+
+    const response = {
+      id: post.id,
+      platform: post.platform,
+      text: post.text,
+      status: post.status,
+      groupId: post.groupId,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString(),
+      media: mediaItems,
+      postResults
+    };
+
+    res.json(response);
+  } catch (error) {
+    logger.error({ error, postId, userId: req.user!.id }, 'Failed to fetch post');
+    res.status(500).json({ error: 'Failed to fetch post' });
+  }
 });
 
 export default router;

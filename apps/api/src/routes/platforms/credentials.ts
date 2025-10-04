@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { PlatformCredentialsCreate, SUPPORTED_PLATFORMS } from '@squidbox/contracts';
+import { PlatformCredentialsCreateRequest } from '@squidbox/contracts';
+import { SUPPORTED_PLATFORMS } from '@squidbox/contracts';
 import { Platform } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -10,7 +11,7 @@ import { getPrisma } from '../../prisma';
 const router = Router();
 
 // Store platform credentials endpoint
-const credentialsSchema = PlatformCredentialsCreate;
+const credentialsSchema = PlatformCredentialsCreateRequest;
 
 router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   logger.info({ userId: req.user!.id, body: req.body }, 'Received credentials storage request');
