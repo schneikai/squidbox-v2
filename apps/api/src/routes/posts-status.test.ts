@@ -15,15 +15,12 @@ vi.mock('../queue', () => ({
   twitterQueue: {
     getJob: vi.fn(),
   },
-  downloadEvents: {
-    on: vi.fn(),
-    off: vi.fn(),
-  },
-  twitterEvents: {
-    on: vi.fn(),
-    off: vi.fn(),
-  },
+  queues: new Map([
+    ['mediaDownload', { getJob: vi.fn() }],
+    ['postTwitter', { getJob: vi.fn() }],
+  ]),
 }));
+
 
 describe('GET /api/posts/group/:groupId/status', () => {
   let authToken: string;

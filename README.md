@@ -40,6 +40,10 @@ We use docker to run postgres and redis for development.
 pnpm dev
 ```
 
+#### Bull Board - BullMQ Dashboard
+
+http://localhost:3000/admin/queues/
+
 ### Database
 
 #### Migrations

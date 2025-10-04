@@ -44,14 +44,14 @@ describe('createPostMediaEntries', () => {
     const first = await createPostMediaEntries(postId, [
       { type: 'image', url: 'https://example.com/c.jpg' },
     ] as any);
-    const mediaId = first[0]?.media.id;
+    const mediaId = first[0]?.id;
 
     // Call again with same URL
     const second = await createPostMediaEntries(postId, [
       { type: 'image', url: 'https://example.com/c.jpg' },
     ] as any);
 
-    expect(second[0]?.media.id).toBe(mediaId);
+    expect(second[0]?.id).toBe(mediaId);
   });
 });
 

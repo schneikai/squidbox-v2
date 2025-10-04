@@ -4,6 +4,7 @@ import request from 'supertest';
 import { createApi } from '../api';
 import { getPrisma } from '../prisma';
 import { authenticateUser, createUser, authHeader } from '../../test/utils';
+import { downloadQueue } from '../queue';
 
 const app = createApi();
 
@@ -14,12 +15,19 @@ vi.mock('../queue', () => ({
     getJobs: vi.fn().mockResolvedValue([]),
   },
   twitterQueue: {
+    add: vi.fn().mockResolvedValue({ id: 'mock-twitter-job' }),
     getJobs: vi.fn().mockResolvedValue([]),
   },
   QUEUE_NAMES: {
-    download: 'media:download',
+    mediaDownload: 'mediaDownload',
+    postTwitter: 'postTwitter',
   },
+  queues: new Map([
+    ['mediaDownload', { add: vi.fn().mockResolvedValue({ id: 'mock-download-job' }), getJobs: vi.fn().mockResolvedValue([]) }],
+    ['postTwitter', { add: vi.fn().mockResolvedValue({ id: 'mock-twitter-job' }), getJobs: vi.fn().mockResolvedValue([]) }],
+  ]),
 }));
+
 
 describe('POST /api/posts/group/:groupId/retry', () => {
   let authToken: string;
@@ -73,16 +81,8 @@ describe('POST /api/posts/group/:groupId/retry', () => {
       groupId
     });
 
-    // Check that download job was enqueued with retryOnly flag
-    const { downloadQueue } = await import('../queue');
-    expect(downloadQueue.add).toHaveBeenCalledWith(
-      'media:download',
-      { groupId, retryOnly: true },
-      expect.objectContaining({
-        attempts: 2,
-        backoff: { type: 'fixed', delay: 1000 },
-      })
-    );
+    // Check that no download jobs were enqueued (posts have no media)
+    expect(downloadQueue.add).not.toHaveBeenCalled();
 
     // Check that all posts in the group were reset to pending
     const posts = await getPrisma().post.findMany({
@@ -177,14 +177,7 @@ describe('POST /api/posts/group/:groupId/retry', () => {
     expect(mockDownloadJob.remove).toHaveBeenCalled();
     expect(mockPostingJob.remove).toHaveBeenCalled();
 
-    // Verify new job was enqueued
-    expect(downloadQueue.add).toHaveBeenCalledWith(
-      'media:download',
-      { groupId, retryOnly: true },
-      expect.objectContaining({
-        attempts: 2,
-        backoff: { type: 'fixed', delay: 1000 },
-      })
-    );
+    // Verify no download jobs were enqueued (posts have no media)
+    expect(downloadQueue.add).not.toHaveBeenCalled();
   });
 });

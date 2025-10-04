@@ -7,6 +7,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { Platform } from '@prisma/client';
+import { downloadQueue } from '../queue';
 
 const app = createApi();
 import { createTweet } from '@squidbox/twitter-api';
@@ -28,10 +29,15 @@ vi.mock('../queue', () => ({
     add: vi.fn().mockResolvedValue({ id: 'mock-twitter-job' }),
   },
   QUEUE_NAMES: {
-    download: 'media:download',
-    twitter: 'post:twitter',
+    mediaDownload: 'mediaDownload',
+    postTwitter: 'postTwitter',
   },
+  queues: new Map([
+    ['mediaDownload', { add: vi.fn().mockResolvedValue({ id: 'mock-download-job' }) }],
+    ['postTwitter', { add: vi.fn().mockResolvedValue({ id: 'mock-twitter-job' }) }],
+  ]),
 }));
+
 
 const mockCreateTweet = vi.mocked(createTweet);
 
@@ -97,7 +103,7 @@ describe('POST /api/posts', () => {
     vi.clearAllMocks();
   });
 
-  it('should create a post successfully and enqueue download job', async () => {
+  it('should create a post successfully without media', async () => {
     const postData: CreatePostRequest = {
       postGroups: [
         {
@@ -126,18 +132,8 @@ describe('POST /api/posts', () => {
       createdAt: expect.any(String),
     });
 
-    // Check that download job was enqueued
-    const { downloadQueue } = await import('../queue');
-    expect(downloadQueue.add).toHaveBeenCalledWith(
-      'media:download',
-      expect.objectContaining({
-        groupId: expect.any(String),
-      }),
-      expect.objectContaining({
-        attempts: 2,
-        backoff: { type: 'fixed', delay: 1000 },
-      })
-    );
+    // Check that no download job was enqueued (no media)
+    expect(downloadQueue.add).not.toHaveBeenCalled();
   });
 
   it('should create a post with media successfully and enqueue download job', async () => {
@@ -174,13 +170,12 @@ describe('POST /api/posts', () => {
     });
 
     // Check that download job was enqueued
-    const { downloadQueue } = await import('../queue');
     expect(downloadQueue.add).toHaveBeenCalledWith(
-      'media:download',
+      'download:media',
       expect.objectContaining({
         groupId: expect.any(String),
+        mediaId: expect.any(String),
       }),
-      expect.any(Object)
     );
   });
 
@@ -268,7 +263,7 @@ describe('POST /api/posts', () => {
     });
   });
 
-  it('should handle multiple platforms and enqueue download job', async () => {
+  it('should handle multiple platforms without media', async () => {
     const postData: CreatePostRequest = {
       postGroups: [
         {
@@ -296,15 +291,8 @@ describe('POST /api/posts', () => {
       groupId: expect.any(String),
     });
 
-    // Check that download job was enqueued
-    const { downloadQueue } = await import('../queue');
-    expect(downloadQueue.add).toHaveBeenCalledWith(
-      'media:download',
-      expect.objectContaining({
-        groupId: expect.any(String),
-      }),
-      expect.any(Object)
-    );
+    // Check that no download job was enqueued (no media)
+    expect(downloadQueue.add).not.toHaveBeenCalled();
   });
 
   it('should return 401 without authentication', async () => {

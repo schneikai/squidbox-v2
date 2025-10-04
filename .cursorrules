@@ -61,6 +61,12 @@ Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma
 - Use Prisma enums for type safety instead of string fields with manual validation
 - Reset database during development instead of creating migrations (`npx prisma db push --force-reset`)
 
+## Queue & Workers
+
+<!-- Add rules for BullMQ, Redis, background job processing -->
+
+- Handle job retries and error states properly in worker event handlers like worker.on 'failed', 'completed', 'error', etc.
+
 ## Testing
 
 <!-- Add rules for Jest, Cypress, selectors, intercepts -->
@@ -69,3 +75,12 @@ Key technologies: React Native, Expo, TypeScript, Express.js, PostgreSQL, Prisma
 - to run all tests in a specific package, use: `cd /Users/kai/Development/squidbox-v2/apps/api && nvm use && pnpm test`
 - to run a single test, use: `cd /Users/kai/Development/squidbox-v2/apps/api && nvm use && pnpm test test/filename.test.ts`
 - Always import `apps/api/test/setup.ts` FIRST in all test files in the api package to ensure proper setup of the test environment
+
+### Worker Testing
+
+- Use real Redis and BullMQ in tests instead of mocking queue infrastructure; we have Redis running in tests
+- Start workers after database setup to ensure they use the same database connection as tests
+- Use `await startWorker(() => startWorkerFunction())` utility for starting workers in tests
+- Use `await waitForJobState(job, 'completed')` and `await waitForJobState(job, 'failed')` for job state verification
+- Use `createTestJobOptions()` for fast retry settings in tests (100ms fixed delay instead of exponential backoff)
+- Mock only external dependencies (like HTTP requests) but keep queue and database operations real

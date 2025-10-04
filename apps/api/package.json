@@ -25,6 +25,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@bull-board/api": "^6.13.0",
+    "@bull-board/express": "^6.13.0",
     "@prisma/client": "^6.15.0",
     "@squidbox/contracts": "workspace:*",
     "@squidbox/twitter-api": "workspace:*",

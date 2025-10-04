@@ -1,70 +1,75 @@
-import { Queue, Worker, FlowProducer, QueueEvents, type Processor } from 'bullmq';
+import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
-import { logger } from './logger';
 
-// Redis connection
+// To add new Queue and Worker
+// 1. Add a queue configuration to QUEUE_CONFIG
+// 2. Create a worker in src/workers folder
+// 3. Start the worker in src/worker.ts
+
+const DEFAULT_JOB_OPTIONS = {
+  attempts: 3,
+  backoff: { type: 'exponential', delay: 2000 },
+} as const;
+
+// Queue configuration - this is now the single source of truth
+export const QUEUE_CONFIG = {
+  mediaDownload: {
+    concurrency: 4,
+    defaultJobOptions: DEFAULT_JOB_OPTIONS,
+  },
+  postTwitter: {
+    concurrency: 1,
+    defaultJobOptions: DEFAULT_JOB_OPTIONS,
+  },
+  postBluesky: {
+    concurrency: 1,
+    defaultJobOptions: DEFAULT_JOB_OPTIONS,
+  },
+  postOnlyfans: {
+    concurrency: 1,
+    defaultJobOptions: DEFAULT_JOB_OPTIONS,
+  },
+  postJff: {
+    concurrency: 1,
+    defaultJobOptions: DEFAULT_JOB_OPTIONS,
+  },
+} as const;
+
+// Generate queue names from config - auto-generated from QUEUE_CONFIG keys
+export const QUEUE_NAMES = Object.fromEntries(
+  Object.keys(QUEUE_CONFIG).map(key => [key, key])
+) as Record<keyof typeof QUEUE_CONFIG, keyof typeof QUEUE_CONFIG>;
+
+export type QueueName = keyof typeof QUEUE_CONFIG;
+
+// Setup Redis connection
 export const connection = new IORedis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
-  // BullMQ requires this to be null for blocking commands used by QueueEvents/Workers
+  // BullMQ requires this to be null for blocking commands used by Workers
   maxRetriesPerRequest: null,
 });
 
-// Queue names
-export const QUEUE_NAMES = {
-  // Use hyphens to satisfy BullMQ queue name constraints (no colons allowed)
-  download: 'media-download',
-  twitter: 'post-twitter',
-  bluesky: 'post-bluesky',
-  onlyfans: 'post-onlyfans',
-  jff: 'post-jff',
-} as const;
+// Create queues
+export const queues = new Map<QueueName, Queue>();
 
-export type QueueName = typeof QUEUE_NAMES[keyof typeof QUEUE_NAMES];
-
-// Queues
-export const downloadQueue = new Queue(QUEUE_NAMES.download, { connection });
-export const twitterQueue = new Queue(QUEUE_NAMES.twitter, { connection });
-export const blueskyQueue = new Queue(QUEUE_NAMES.bluesky, { connection });
-export const onlyfansQueue = new Queue(QUEUE_NAMES.onlyfans, { connection });
-export const jffQueue = new Queue(QUEUE_NAMES.jff, { connection });
-
-// Queue events (used for SSE broadcasting)
-export const downloadEvents = new QueueEvents(QUEUE_NAMES.download, { connection });
-export const twitterEvents = new QueueEvents(QUEUE_NAMES.twitter, { connection });
-export const blueskyEvents = new QueueEvents(QUEUE_NAMES.bluesky, { connection });
-export const onlyfansEvents = new QueueEvents(QUEUE_NAMES.onlyfans, { connection });
-export const jffEvents = new QueueEvents(QUEUE_NAMES.jff, { connection });
-
-// Flow producer for job dependencies
-export const flowProducer = new FlowProducer({ connection });
-
-// Helper to create a worker
-export function createWorker<T = unknown>(queueName: QueueName, processor: Processor<T, unknown>) {
-  const worker = new Worker<T>(queueName, processor, {
+for (const [queueName, config] of Object.entries(QUEUE_CONFIG)) {
+  const queue = new Queue(queueName, {
     connection,
-    // Reasonable defaults; can be tuned per queue later
-    concurrency: queueName === QUEUE_NAMES.twitter ? 2 : 4,
+    ...config,
   });
-
-  worker.on('error', (err) => {
-    logger.error({ err, queueName }, 'Worker error');
-  });
-
-  return worker;
+  queues.set(queueName as QueueName, queue);
 }
+
+// Export individual queues for backward compatibility
+export const downloadQueue = queues.get('mediaDownload')!;
+export const twitterQueue = queues.get('postTwitter')!;
+export const blueskyQueue = queues.get('postBluesky')!;
+export const onlyfansQueue = queues.get('postOnlyfans')!;
+export const jffQueue = queues.get('postJff')!;
+
 
 export function closeQueues() {
   return Promise.all([
-    downloadQueue.close(),
-    twitterQueue.close(),
-    blueskyQueue.close(),
-    onlyfansQueue.close(),
-    jffQueue.close(),
-    downloadEvents.close(),
-    twitterEvents.close(),
-    blueskyEvents.close(),
-    onlyfansEvents.close(),
-    jffEvents.close(),
-    flowProducer.close(),
+    ...Array.from(queues.values()).map(queue => queue.close()),
     connection.quit(),
   ]);
 }

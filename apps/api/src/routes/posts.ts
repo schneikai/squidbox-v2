@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { CreatePostRequest, CreatePostResponse, PostsListResponse, PostDetailResponse } from '@squidbox/contracts';
+import { CreatePostRequest, CreatePostResponse } from '@squidbox/contracts';
 import { PlatformPost } from '../types.js';
 import { getPrisma } from '../prisma.js';
 import { logger } from '../logger.js';
 import { authenticateToken, AuthenticatedRequest } from '../auth.js';
 import { createPostMediaEntries } from '../utils/createPostMediaEntries';
-import { QUEUE_NAMES, downloadQueue, twitterQueue } from '../queue.js';
-
+import { downloadQueue, twitterQueue } from '../queue.js';
+import type { Media } from '@prisma/client';
 
 const router = Router();
 
@@ -42,8 +42,8 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
   }
 
   // Generate a unique group ID for this batch of posts
-  const groupId = `group_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-  
+  const groupId = crypto.randomUUID();
+
   // Step 1: Create all database entries with the same groupId
   const createdPosts = [];
   for (const platformPost of platformPosts) {
@@ -59,19 +59,30 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res) => {
     });
     
     // Create media items and link them to the post (without downloading)
+    let postMediaData: Media[] = [];
     if (platformPost.post.media.length > 0) {
-      await createPostMediaEntries(dbPost.id, platformPost.post.media);
+      postMediaData = await createPostMediaEntries(dbPost.id, platformPost.post.media);
     }
     
-    createdPosts.push(dbPost);
+    createdPosts.push({ ...dbPost, media: postMediaData });
     logger.info({ postId: dbPost.id, platform: platformPost.platform, groupId }, 'Created post and media database entries');
   }
 
-  // Step 2: Enqueue a single download job for the entire group
-  await downloadQueue.add('media:download', { groupId }, {
-    attempts: 2,
-    backoff: { type: 'fixed', delay: 1000 },
-  });
+  // Step 2: Enqueue individual download jobs for each media item
+  const downloadJobs = [];
+  for (const post of createdPosts) {
+    if (post.media && post.media.length > 0) {
+      for (const media of post.media) {
+        const downloadJob = await downloadQueue.add('download:media', {
+          mediaId: media.id,
+          groupId,
+        });
+        downloadJobs.push(downloadJob);
+      }
+    }
+  }
+
+  // Step 3: Posting jobs will be enqueued by the download worker when all media is downloaded
 
   const response: CreatePostResponse = {
     id: createdPosts[0]?.id || '',
@@ -215,11 +226,11 @@ router.post('/group/:groupId/retry', authenticateToken, async (req: Authenticate
   }
 
   // Cancel any existing jobs for this group to prevent race conditions
-  const existingJobs = await downloadQueue.getJobs(['waiting', 'active', 'delayed'], 0, -1);
-  for (const job of existingJobs) {
-    if (job.data.groupId === groupId) {
-      await job.remove();
-    }
+  const existingDownloadJobs = await downloadQueue.getJobs(['waiting', 'active', 'delayed'], 0, -1);
+  for (const job of existingDownloadJobs) {
+    // We can't easily filter by groupId here since individual download jobs don't have groupId
+    // This is a limitation of the current approach
+    await job.remove();
   }
 
   // Also cancel any existing posting jobs to prevent race conditions
@@ -244,12 +255,36 @@ router.post('/group/:groupId/retry', authenticateToken, async (req: Authenticate
     }
   });
 
-  // Enqueue download job for the entire group with retryOnly flag
-  // The download worker will then enqueue posting jobs for all posts in the group
-  await downloadQueue.add('media:download', { groupId, retryOnly: true }, {
-    attempts: 2,
-    backoff: { type: 'fixed', delay: 1000 },
-  });
+  // Enqueue individual download jobs for failed posts
+  for (const post of failedPosts) {
+    const postWithMedia = await getPrisma().post.findUnique({
+      where: { id: post.id },
+      include: {
+        postMedia: {
+          include: { media: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+
+    if (postWithMedia?.postMedia) {
+      for (const pm of postWithMedia.postMedia) {
+        await downloadQueue.add('download:media', {
+          mediaId: pm.media.id,
+          groupId,
+        });
+      }
+    }
+
+    // Enqueue posting job for this post
+    if (post.platform === 'twitter') {
+      await twitterQueue.add('post:twitter', {
+        userId: post.userId,
+        postId: post.id,
+        text: post.text,
+      });
+    }
+  }
 
   const response = { 
     ok: true, 

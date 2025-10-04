@@ -1,421 +1,155 @@
 import '../../test/setup';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { startDownloadWorker } from './downloadWorker';
 import { getPrisma } from '../prisma';
-import { downloadMedia } from '../utils/downloadMedia';
-import { twitterQueue } from '../queue';
-import { existsSync } from 'fs';
+import { downloadQueue } from '../queue';
+import { Worker } from 'bullmq';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { startWorker, waitForJobState, waitForJobCompletion, createTestJobOptions } from '../../test/worker-utils';
 
-// Mock dependencies
-vi.mock('../utils/downloadMedia');
-vi.mock('../queue', () => ({
-  createWorker: vi.fn(),
-  QUEUE_NAMES: { download: 'media-download' },
-  twitterQueue: {
-    add: vi.fn(),
-  },
-}));
-vi.mock('fs', () => ({
-  existsSync: vi.fn(),
+// Mock the downloadMediaFile function to avoid actual HTTP requests
+vi.mock('../utils/downloadMediaFile', () => ({
+  downloadMediaFile: vi.fn().mockResolvedValue('/fake/path/to/downloaded/file.jpg'),
 }));
 
-const mockDownloadMedia = vi.mocked(downloadMedia);
-const mockExistsSync = vi.mocked(existsSync);
-const mockTwitterQueueAdd = vi.mocked(twitterQueue.add);
+// We'll override the queue options directly in the test
 
 describe('downloadWorker', () => {
-  let mockJob: any;
-  let mockProcessor: any;
+  let worker: Worker;
 
   beforeEach(async () => {
-    // Reset all mocks
-    vi.clearAllMocks();
+    // Clean up any existing jobs before each test
+    await downloadQueue.obliterate({ force: true });
     
-    // Create mock job with updateProgress method
-    mockJob = {
-      data: { groupId: 'test-group-1' },
-      updateProgress: vi.fn(),
-    };
-
-    // Mock the createWorker function to capture the processor
-    const { createWorker } = await import('../queue');
-    vi.mocked(createWorker).mockImplementation((queueName, processor) => {
-      mockProcessor = processor;
-      return {} as any;
-    });
-
-    // Start the worker to capture the processor
-    startDownloadWorker();
+    // Start worker after database is set up (database setup happens in test/setup.ts)
+    // This ensures the worker uses the same database connection as the test
   });
 
   afterEach(async () => {
-    // Clean up any test data
-    await getPrisma().postResult.deleteMany();
-    await getPrisma().postMedia.deleteMany();
-    await getPrisma().media.deleteMany();
-    await getPrisma().post.deleteMany();
-    await getPrisma().user.deleteMany();
+    // Clean up worker after each test
+    if (worker) {
+      await worker.close();
+    }
+    
+    // Clean up any remaining jobs
+    await downloadQueue.obliterate({ force: true });
   });
 
-  describe('basic functionality', () => {
-    it('should process posts and download media successfully', async () => {
-      // Create test data
-      const user = await getPrisma().user.create({
-        data: {
-          email: 'test@example.com',
-          passwordHash: 'hashed-password',
-        },
-      });
+  it('should process a download job successfully', async () => {
+    // Start the actual worker (after database is set up)
+    worker = await startWorker(() => startDownloadWorker());
 
-      const media1 = await getPrisma().media.create({
-        data: {
-          type: 'image',
-          url: 'https://example.com/image1.jpg',
-        },
-      });
-
-      const media2 = await getPrisma().media.create({
-        data: {
-          type: 'image',
-          url: 'https://example.com/image2.jpg',
-        },
-      });
-
-      const post1 = await getPrisma().post.create({
-        data: {
-          userId: user.id,
-          platform: 'twitter',
-          text: 'Test post 1',
-          status: 'pending',
-          groupId: 'test-group-1',
-        },
-      });
-
-      const post2 = await getPrisma().post.create({
-        data: {
-          userId: user.id,
-          platform: 'twitter',
-          text: 'Test post 2',
-          status: 'pending',
-          groupId: 'test-group-1',
-        },
-      });
-
-      await getPrisma().postMedia.createMany({
-        data: [
-          { postId: post1.id, mediaId: media1.id, order: 0 },
-          { postId: post2.id, mediaId: media2.id, order: 0 },
-        ],
-      });
-
-      // Mock file system - files don't exist
-      mockExistsSync.mockReturnValue(false);
-      
-      // Mock successful downloads
-      mockDownloadMedia.mockResolvedValue('/path/to/downloaded/file.jpg');
-
-      // Execute the processor
-      const result = await mockProcessor(mockJob);
-
-      // Verify progress updates were called
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'starting',
-        groupId: 'test-group-1',
-        retryOnly: false,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'downloading',
-        groupId: 'test-group-1',
-        completed: 0,
-        total: 2,
-        percent: 0,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'finished',
-        groupId: 'test-group-1',
-        completed: 2,
-        total: 2,
-        percent: 100,
-      });
-
-      // Verify downloads were called
-      expect(mockDownloadMedia).toHaveBeenCalledTimes(2);
-      expect(mockDownloadMedia).toHaveBeenCalledWith(media1.id, media1.url);
-      expect(mockDownloadMedia).toHaveBeenCalledWith(media2.id, media2.url);
-
-      // Verify Twitter queue jobs were added
-      expect(mockTwitterQueueAdd).toHaveBeenCalledTimes(2);
-      expect(mockTwitterQueueAdd).toHaveBeenCalledWith('post:twitter', {
-        userId: user.id,
-        postId: post1.id,
-        text: post1.text,
-      }, {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-      });
-
-      // Verify return value
-      expect(result).toEqual({ ok: true, postsProcessed: 2 });
+    // Create test media record (without localPath to trigger download)
+    await getPrisma().media.create({
+      data: {
+        id: 'test-media-1',
+        type: 'image',
+        url: 'https://example.com/image.jpg',
+      },
     });
 
-    it('should handle retryOnly mode correctly', async () => {
-      // Create test data with failed posts
-      const user = await getPrisma().user.create({
-        data: {
-          email: 'test@example.com',
-          passwordHash: 'hashed-password',
-        },
-      });
-
-      const media = await getPrisma().media.create({
-        data: {
-          type: 'image',
-          url: 'https://example.com/image.jpg',
-        },
-      });
-
-      const post = await getPrisma().post.create({
-        data: {
-          userId: user.id,
-          platform: 'twitter',
-          text: 'Failed post',
-          status: 'failed', // This should be included in retryOnly
-          groupId: 'test-group-1',
-        },
-      });
-
-      await getPrisma().postMedia.create({
-        data: {
-          postId: post.id,
-          mediaId: media.id,
-          order: 0,
-        },
-      });
-
-      // Set retryOnly mode
-      mockJob.data.retryOnly = true;
-      mockExistsSync.mockReturnValue(false);
-      mockDownloadMedia.mockResolvedValue('/path/to/downloaded/file.jpg');
-
-      // Execute the processor
-      const result = await mockProcessor(mockJob);
-
-      // Verify it processed the failed post
-      expect(result).toEqual({ ok: true, postsProcessed: 1 });
-      expect(mockDownloadMedia).toHaveBeenCalledWith(media.id, media.url);
+    // Add a job to the queue
+    const job = await downloadQueue.add('download:media', {
+      mediaId: 'test-media-1',
+      groupId: 'test-group-1',
     });
 
-    it('should skip download when file already exists', async () => {
-      // Create test data
-      const user = await getPrisma().user.create({
-        data: {
-          email: 'test@example.com',
-          passwordHash: 'hashed-password',
-        },
-      });
+    // Wait for job to complete
+    await waitForJobState(job, 'completed');
 
-      const media = await getPrisma().media.create({
-        data: {
-          type: 'image',
-          url: 'https://example.com/image.jpg',
-          localPath: '/existing/path/image.jpg',
-        },
-      });
-
-      const post = await getPrisma().post.create({
-        data: {
-          userId: user.id,
-          platform: 'twitter',
-          text: 'Test post',
-          status: 'pending',
-          groupId: 'test-group-1',
-        },
-      });
-
-      await getPrisma().postMedia.create({
-        data: {
-          postId: post.id,
-          mediaId: media.id,
-          order: 0,
-        },
-      });
-
-      // Mock file exists
-      mockExistsSync.mockReturnValue(true);
-
-      // Execute the processor
-      const result = await mockProcessor(mockJob);
-
-      // Verify download was skipped
-      expect(mockDownloadMedia).not.toHaveBeenCalled();
-      expect(result).toEqual({ ok: true, postsProcessed: 1 });
+    // Verify download result was created in database
+    const downloadResult = await getPrisma().mediaDownloadResult.findUnique({
+      where: { mediaId: 'test-media-1' },
     });
+    expect(downloadResult).toBeTruthy();
+    expect(downloadResult?.status).toBe('success');
 
-    it('should handle non-Twitter platforms by creating failed results', async () => {
-      // Create test data with non-Twitter platform
-      const user = await getPrisma().user.create({
-        data: {
-          email: 'test@example.com',
-          passwordHash: 'hashed-password',
-        },
-      });
-
-      const post = await getPrisma().post.create({
-        data: {
-          userId: user.id,
-          platform: 'bluesky', // Non-Twitter platform
-          text: 'Test post',
-          status: 'pending',
-          groupId: 'test-group-1',
-        },
-      });
-
-      mockExistsSync.mockReturnValue(false);
-
-      // Execute the processor
-      const result = await mockProcessor(mockJob);
-
-      // Verify no Twitter queue jobs were added
-      expect(mockTwitterQueueAdd).not.toHaveBeenCalled();
-
-      // Verify failed result was created
-      const postResult = await getPrisma().postResult.findFirst({
-        where: { postId: post.id },
-      });
-
-      expect(postResult).toBeTruthy();
-      expect(postResult?.status).toBe('failed');
-      expect(postResult?.statusText).toBe('bluesky posting not yet implemented');
-
-      // Verify post status was updated to failed
-      const updatedPost = await getPrisma().post.findUnique({
-        where: { id: post.id },
-      });
-      expect(updatedPost?.status).toBe('failed');
-
-      expect(result).toEqual({ ok: true, postsProcessed: 1 });
+    // Verify media record was updated with localPath
+    const updatedMedia = await getPrisma().media.findUnique({
+      where: { id: 'test-media-1' },
     });
-
-    it('should handle empty group gracefully', async () => {
-      // Execute with no posts in group
-      const result = await mockProcessor(mockJob);
-
-      // Verify progress updates
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'starting',
-        groupId: 'test-group-1',
-        retryOnly: false,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'downloading',
-        groupId: 'test-group-1',
-        completed: 0,
-        total: 0,
-        percent: 0,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'finished',
-        groupId: 'test-group-1',
-        completed: 0,
-        total: 0,
-        percent: 100,
-      });
-
-      expect(result).toEqual({ ok: true, postsProcessed: 0 });
-    });
+    expect(updatedMedia?.localPath).toBe('/fake/path/to/downloaded/file.jpg');
   });
 
-  describe('progress tracking', () => {
-    it('should update progress correctly for multiple media items', async () => {
-      // Create test data with multiple media items
-      const user = await getPrisma().user.create({
-        data: {
-          email: 'test@example.com',
-          passwordHash: 'hashed-password',
-        },
-      });
+  it('should skip download when file already exists', async () => {
+    // Start the actual worker (after database is set up)
+    worker = await startWorker(() => startDownloadWorker());
 
-      const media1 = await getPrisma().media.create({
-        data: {
-          type: 'image',
-          url: 'https://example.com/image1.jpg',
-        },
-      });
+    // Create a test file that already exists
+    const mediaDir = path.join(process.cwd(), 'uploads', 'media');
+    await fs.mkdir(mediaDir, { recursive: true });
+    
+    const testFilePath = path.join(mediaDir, 'test-media-2.jpg');
+    await fs.writeFile(testFilePath, 'test content');
 
-      const media2 = await getPrisma().media.create({
-        data: {
-          type: 'image',
-          url: 'https://example.com/image2.jpg',
-        },
-      });
-
-      const post = await getPrisma().post.create({
-        data: {
-          userId: user.id,
-          platform: 'twitter',
-          text: 'Test post',
-          status: 'pending',
-          groupId: 'test-group-1',
-        },
-      });
-
-      await getPrisma().postMedia.createMany({
-        data: [
-          { postId: post.id, mediaId: media1.id, order: 0 },
-          { postId: post.id, mediaId: media2.id, order: 1 },
-        ],
-      });
-
-      mockExistsSync.mockReturnValue(false);
-      mockDownloadMedia.mockResolvedValue('/path/to/downloaded/file.jpg');
-
-      // Execute the processor
-      await mockProcessor(mockJob);
-
-      // Verify progress updates for each media item
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'downloading',
-        groupId: 'test-group-1',
-        postId: post.id,
-        mediaId: media1.id,
-        completed: 0,
-        total: 2,
-        percent: 0,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'downloading',
-        groupId: 'test-group-1',
-        postId: post.id,
-        mediaId: media1.id,
-        completed: 1,
-        total: 2,
-        percent: 50,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'downloading',
-        groupId: 'test-group-1',
-        postId: post.id,
-        mediaId: media2.id,
-        completed: 1,
-        total: 2,
-        percent: 50,
-      });
-
-      expect(mockJob.updateProgress).toHaveBeenCalledWith({
-        phase: 'downloading',
-        groupId: 'test-group-1',
-        postId: post.id,
-        mediaId: media2.id,
-        completed: 2,
-        total: 2,
-        percent: 100,
-      });
+    // Create test media record with localPath already set
+    await getPrisma().media.create({
+      data: {
+        id: 'test-media-2',
+        type: 'image',
+        url: 'https://example.com/image2.jpg',
+        localPath: testFilePath,
+      },
     });
+
+    // Verify the file actually exists
+    const { existsSync } = await import('fs');
+    expect(existsSync(testFilePath)).toBe(true);
+
+    // Add a job to the queue
+    const job = await downloadQueue.add('download:media', {
+      mediaId: 'test-media-2',
+      groupId: 'test-group-2',
+    });
+
+    // Wait for job to complete
+    await waitForJobState(job, 'completed');
+
+    // Verify download result was created in database
+    const downloadResult = await getPrisma().mediaDownloadResult.findUnique({
+      where: { mediaId: 'test-media-2' },
+    });
+    expect(downloadResult).toBeTruthy();
+    expect(downloadResult?.status).toBe('success');
+    expect(downloadResult?.statusText).toBe('File already exists');
+  });
+
+  it('should handle download failures and retries', async () => {
+    // Start the actual worker (after database is set up)
+    worker = await startWorker(() => startDownloadWorker());
+
+    // Create test media record
+    await getPrisma().media.create({
+      data: {
+        id: 'test-media-fail',
+        type: 'image',
+        url: 'https://example.com/fail.jpg',
+      },
+    });
+
+    // Mock downloadMediaFile to always throw an error
+    const { downloadMediaFile } = await import('../utils/downloadMediaFile');
+    vi.mocked(downloadMediaFile).mockRejectedValue(new Error('Network error: Connection timeout'));
+
+    // Add a job to the queue with faster retry options for testing
+    const job = await downloadQueue.add('download:media', {
+      mediaId: 'test-media-fail',
+      groupId: 'test-group-fail',
+    }, createTestJobOptions());
+
+    // Wait for job to fail
+    await waitForJobState(job, 'failed');
+
+    // Verify download result shows failure
+    const downloadResult = await getPrisma().mediaDownloadResult.findUnique({
+      where: { mediaId: 'test-media-fail' },
+    });
+    expect(downloadResult).toBeTruthy();
+    expect(downloadResult?.status).toBe('failed');
+    expect(downloadResult?.statusText).toContain('Network error: Connection timeout');
+
+    // Verify the job was retried (should have been called multiple times)
+    expect(downloadMediaFile).toHaveBeenCalledTimes(3); // Default retry attempts
   });
 });

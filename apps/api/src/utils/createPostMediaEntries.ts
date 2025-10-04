@@ -5,7 +5,7 @@ import { PlatformPost } from '../types.js';
  * Helper function to create or find media items and link them to a post (without downloading)
  */
 export async function createPostMediaEntries(postId: string, mediaItems: PlatformPost['post']['media']) {
-  const postMediaLinks = [];
+  const postMedia = [];
   
   for (let i = 0; i < mediaItems.length; i++) {
     const mediaItem = mediaItems[i];
@@ -21,9 +21,11 @@ export async function createPostMediaEntries(postId: string, mediaItems: Platfor
         url: mediaItem.url,
       },
     });
+
+    postMedia.push(media);
     
     // Create the post-media link (idempotent per postId+mediaId)
-    const postMedia = await getPrisma().postMedia.upsert({
+    await getPrisma().postMedia.upsert({
       where: { postId_mediaId: { postId, mediaId: media.id } },
       update: {},
       create: {
@@ -32,9 +34,7 @@ export async function createPostMediaEntries(postId: string, mediaItems: Platfor
         order: i,
       },
     });
-    
-    postMediaLinks.push({ postMedia, media });
   }
   
-  return postMediaLinks;
+  return postMedia;
 }

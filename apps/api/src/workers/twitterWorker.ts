@@ -1,11 +1,12 @@
-import { createWorker, QUEUE_NAMES } from '../queue';
+import { Worker } from 'bullmq';
+import { QUEUE_NAMES, connection, QUEUE_CONFIG } from '../queue';
 import { getPrisma } from '../prisma';
 import { postToPlatform } from '../services/platformService';
+import { logger } from '../logger';
 
 export function startTwitterWorker() {
-  return createWorker<{ userId: string; postId: string; text: string }>(QUEUE_NAMES.twitter, async (job) => {
+  const worker = new Worker<{ userId: string; postId: string; text: string }>(QUEUE_NAMES.postTwitter, async (job) => {
     const { userId, postId, text } = job.data;
-    await job.updateProgress({ phase: 'login' });
 
     const postWithMedia = await getPrisma().post.findUnique({
       where: { id: postId },
@@ -25,33 +26,87 @@ export function startTwitterWorker() {
       localPath: pm.media.localPath ?? undefined,
     }));
 
-    await job.updateProgress({ phase: 'upload' });
     const result = await postToPlatform(userId, {
       platform: 'twitter',
       post: { text, media },
     });
 
+    return result;
+  }, {
+    connection,
+    concurrency: QUEUE_CONFIG.postTwitter.concurrency,
+  });
+
+  worker.on('error', (err) => {
+    logger.error({ err, queueName: QUEUE_NAMES.postTwitter }, 'Twitter worker error');
+  });
+
+  worker.on('failed', async (job, err) => {
+    if (!job) return;
+    
+    const { postId } = job.data;
+    const errorMessage = err.message || 'Unknown error occurred';
+    
+    logger.warn({ 
+      jobId: job.id, 
+      queueName: QUEUE_NAMES.postTwitter, 
+      attemptsMade: job.attemptsMade, 
+      maxAttempts: job.opts.attempts,
+      error: errorMessage 
+    }, 'Twitter job failed');
+
+    // Update database for final failure
     await getPrisma().postResult.upsert({
       where: { postId },
       update: {
-        status: result.success ? 'success' : 'failed',
-        statusText: result.error || (result.success ? 'Posted successfully' : 'Posting failed'),
-        platformPostId: result.platformPostId,
+        status: 'failed',
+        statusText: `Failed after ${job.attemptsMade} attempts: ${errorMessage}`,
       },
       create: {
         postId,
-        status: result.success ? 'success' : 'failed',
-        statusText: result.error || (result.success ? 'Posted successfully' : 'Posting failed'),
-        platformPostId: result.platformPostId,
+        status: 'failed',
+        statusText: `Failed after ${job.attemptsMade} attempts: ${errorMessage}`,
       },
     });
 
     await getPrisma().post.update({
       where: { id: postId },
-      data: { status: result.success ? 'success' : 'failed' },
+      data: { status: 'failed' },
+    });
+  });
+
+  worker.on('completed', async (job) => {
+    if (!job) return;
+    
+    const { postId } = job.data;
+    
+    logger.info({ 
+      jobId: job.id, 
+      queueName: QUEUE_NAMES.postTwitter, 
+      attemptsMade: job.attemptsMade 
+    }, 'Twitter job completed successfully');
+
+    // Update database for success
+    await getPrisma().postResult.upsert({
+      where: { postId },
+      update: {
+        status: 'success',
+        statusText: 'Posted successfully',
+        platformPostId: job.returnvalue?.platformPostId,
+      },
+      create: {
+        postId,
+        status: 'success',
+        statusText: 'Posted successfully',
+        platformPostId: job.returnvalue?.platformPostId,
+      },
     });
 
-    await job.updateProgress({ phase: 'post', done: true });
-    return result;
+    await getPrisma().post.update({
+      where: { id: postId },
+      data: { status: 'success' },
+    });
   });
+
+  return worker;
 }
