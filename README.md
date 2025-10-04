@@ -5,65 +5,58 @@ Shared TypeScript monorepo with:
 - `apps/api` — Express backend (dev on 3000), background worker (3001)
 - `apps/mobile` — Expo app (Metro on 8081)
 - `packages/contracts` — shared types and Zod schemas
+- `packages/twitter-api` — Twitter API client
 
 ### Requirements
 
 - Node `20.17.0` (`.nvmrc`)
 - pnpm (managed via Corepack)
 
-### Setup
+### First-time setup
 
 ```bash
 nvm use
 corepack enable
 corepack prepare pnpm@9.12.3 --activate || npm i -g pnpm@9.12.3
 pnpm i
+```
 
-# Start docker services and create database
+#### Environment variables
+
+TODO! Add documentation. Right now, the .env files are in each package.
+Maybe we should have one .env at the root to make setup more simple?
+
+#### Start docker services and create database
+
+```bash
 pnpm dev:setup
 ```
 
 ### Development
 
+We use docker to run postgres and redis for development.
+
 ```bash
 pnpm dev
 ```
 
-### Database migrations
+### Database
+
+#### Migrations
 
 - change the schema in prisma/schema.prisma
 - run `pnpm dev:db:migrate`
 - add a descriptive name to the migration like `add_users` or `add_users_last_login_at`
 
-<!-- Heads-up: The `pnpm db:reset` command was added while in active development without a need to
-maintain migrations. When you have deployed a production database and the data there is
-important, you must switch to the `pnpm db:migrate` command!
-
-The following commad are all for development database management. The production database is managed
-via the deploy script `pnpm deploy`.
+#### Reset
 
 ```bash
-# Create the development database with the default test user
-pnpm db:create
-
-# Drop and recreate the development database with the default test user
-# This is meant to be used in active development while you dont need to maintain migrations
-# This will overwrite all existig migrations with a single migration reflecting the current schema
-pnpm db:reset
-
-# Run a database migration
-# The workflow is the following:
-# 1. Make changes to the schema in prisma/schema.prisma
-# 2. Run pnpm db:migrate <migration_name>
-# Where <migration_name> is a descriptive name for the migration
-# Example: pnpm db:migrate add_users
-#          pnpm db:migrate add_username_to_users
-pnpm db:migrate
-``` -->
+pnpm dev:db:reset
+```
 
 ### Testing
 
-we are using testcontainers for postgres and redis. You need to have docker installed on your local machine. If you get a authentication error, you need run `docker login` and complete the process. then run pnpm test again.
+For running tests, we currently use the same docker infrastructure as for development.
 
 Run all tests across the monorepo:
 
@@ -82,6 +75,14 @@ Direct package testing:
 pnpm -C apps/api test
 pnpm -C apps/api test:watch
 ```
+
+Run a single test:
+
+```bash
+pnpm -C apps/api test test/filename.test.ts
+```
+
+Wallaby.js is supported.
 
 ### Code Quality
 
@@ -109,34 +110,50 @@ pnpm db:migrate add-users   # Run database migrations (pass migration name as ar
 pnpm db:create-dev-user     # Create development user for testing
 ```
 
-**Configuration:**
+## Deploy (Fly.io + Neon)
 
-- **Root configs**: `eslint.config.mjs`, `tsconfig.base.json`, `knip.json`
-- **Package overrides**: Each package extends root config with environment-specific settings
-- **Shared dependencies**: All dev tools installed at root for faster CI and consistency
+### Prereqs
 
-**Note:** Individual app packages no longer have their own code quality scripts. Always run these commands from the monorepo root for proper configuration and cross-package analysis.
+- [Fly.io](https://fly.io) for Servers,
+- [Neon](https://neon.com) for Postgres
+- CLI: `brew install flyctl` then `fly auth login`
 
-### Ports
+### Create Neon DB and get `DATABASE_URL`
 
-- API: `http://localhost:3000`
-- Worker: `http://localhost:3001`
-- Expo Metro: `http://localhost:8081`
+- In Neon, create a project and a database
+- Copy the production connection string. It must start with `postgresql://...`
 
-### Development User
+### Create `.env.production`
 
-The dev user script uses the same environment variables as the mobile app:
-
-- `EXPO_PUBLIC_DEV_USER_EMAIL` (defaults to `dev@example.com`)
-- `EXPO_PUBLIC_DEV_USER_PASSWORD` (defaults to `devpassword123`)
-
-For custom credentials:
-
-```bash
-EXPO_PUBLIC_DEV_USER_EMAIL=myuser@test.com EXPO_PUBLIC_DEV_USER_PASSWORD=mypass123 pnpm db:create-dev-user
+```ini
+DATABASE_URL=your-neon-connection-string
+JWT_SECRET=your-long-random-secret
 ```
 
-### Notes
+To create a new JWT Secret run
 
-- Contracts package builds to `dist` (ESM + CJS + d.ts). Expo is configured to consume workspace packages.
-- Set `EXPO_PUBLIC_BACKEND_URL` for mobile (e.g. `http://localhost:3000`).
+```bash
+openssl rand -base64 48
+```
+
+### Deploy (also to update)
+
+```bash
+npm run deploy:fly
+```
+
+What the script does
+
+- Runs Prisma migrations against `DATABASE_URL`
+- Creates and deploys three Fly apps if missing:
+  - `squidbox-redis` (private, Redis with a small volume)
+  - `squidbox-api` (public API on HTTPS)
+  - `squidbox-worker` (private worker with a 100GB volume at `/data`)
+- Sets `JWT_SECRET`, `DATABASE_URL`, `REDIS_URL` as Fly secrets
+
+Check status / URL
+
+```bash
+fly status -a squidbox-api
+# Public URL is shown as Hostname, e.g. https://squidbox-api.fly.dev
+```
